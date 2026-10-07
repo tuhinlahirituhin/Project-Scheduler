@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://tuhinlahirituhin.github.io/Project-Scheduler/sitemap.xml
+Sitemap: https://planline.app/sitemap.xml

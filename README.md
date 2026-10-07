@@ -42,12 +42,14 @@ The guide pages (`free-epcm-scheduling-software/`, `gantt-chart-maker/`, `xer-fi
 
 The man-hour norms page is built from `js/norms.js`, so re-run the script after changing the norms library.
 
-### Moving to a custom domain
+### Custom domain
+
+The site is served at https://planline.app (registered at Cloudflare). The `CNAME` file tells GitHub Pages which domain to use. To change domains:
 
 1. Buy the domain from any registrar.
-2. At the registrar, add DNS records: four `A` records for the bare domain pointing to `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`, and a `CNAME` record for `www` pointing to `tuhinlahirituhin.github.io`.
+2. At the registrar, add DNS records (on Cloudflare, set each one to "DNS only", grey cloud): four `A` records for the bare domain pointing to `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`, and a `CNAME` record for `www` pointing to `tuhinlahirituhin.github.io`.
 3. On GitHub: **Settings › Pages › Custom domain**, enter the domain, **Save**, and tick **Enforce HTTPS** once it is offered.
-4. Set `SITE_URL` in `tools/build_pages.py` to `https://yourdomain/`, re-run the script and push.
+4. Put the domain in the `CNAME` file, set `SITE_URL` in `tools/build_pages.py` to `https://yourdomain/`, re-run the script and push.
 
 ## Turn on ads (later)
 

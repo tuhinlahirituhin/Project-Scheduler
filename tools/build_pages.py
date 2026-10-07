@@ -13,7 +13,7 @@ import re
 import subprocess
 
 # The one place the public address lives. Change it here when a custom domain is set up.
-SITE_URL = 'https://tuhinlahirituhin.github.io/Project-Scheduler/'
+SITE_URL = 'https://planline.app/'
 SITE_NAME = 'Planline'
 UPDATED = '2026-10-07'
 # Paste the content="..." value from Google Search Console's "HTML tag" verification here.
