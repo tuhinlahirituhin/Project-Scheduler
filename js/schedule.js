@@ -119,6 +119,10 @@ PS.schedule = (function () {
 
     // ---- forward pass
     leaves.forEach((t) => {
+      // quantity-measured progress: installed quantity ÷ scope quantity
+      const log = Array.isArray(t.progressLog) ? t.progressLog : [];
+      t._qtyDone = log.reduce((a, e) => a + (Number(e.qty) || 0), 0);
+      if (Number(t.qty) > 0 && log.length) t.pct = U.round(U.clamp(100 * t._qtyDone / Number(t.qty), 0, 100), 2);
       const pct = U.clamp(Number(t.pct) || 0, 0, 100);
       t._fixed = !!t.actualStart;
       t._base = t.actualStart ? cal.indexOf(t.actualStart, 'start') : 0;
@@ -223,6 +227,11 @@ PS.schedule = (function () {
       t.status = statusOf(t, statusISO);
     });
 
+    // weightage: share of total man-hours (or of task-days when no man-hours are entered)
+    const totalMH = leaves.reduce((a, t) => a + t._mh, 0);
+    const totalDays = leaves.reduce((a, t) => a + Math.max(t._dur, 0), 0);
+    leaves.forEach((t) => { t._wt = totalMH > 0 ? 100 * t._mh / totalMH : totalDays > 0 ? 100 * Math.max(t._dur, 0) / totalDays : 0; });
+
     for (let i = tasks.length - 1; i >= 0; i--) {
       const t = tasks[i];
       if (!t._summary) continue;
@@ -240,6 +249,7 @@ PS.schedule = (function () {
       t.manhours = U.round(t._mh, 2);
       t._ev = kids.reduce((a, k) => a + k._ev, 0);
       t._pv = kids.reduce((a, k) => a + k._pv, 0);
+      t._wt = kids.reduce((a, k) => a + k._wt, 0);
       if (t._mh > 0) t.pct = U.round(100 * t._ev / t._mh, 1);
       else {
         const dw = kids.reduce((a, k) => a + Math.max(k._dur, 0.0001), 0);
@@ -257,7 +267,7 @@ PS.schedule = (function () {
       cal, byId, errors, leaves,
       startISO: leaves.length ? cal.dateOf(startIdx) : cal.startISO,
       finishISO: leaves.length ? cal.dateOf(Math.max(finishIdx - 1, 0)) : cal.startISO,
-      finishIdx, statusISO, statusIdx, hasBaseline,
+      finishIdx, statusISO, statusIdx, hasBaseline, totalMH,
     };
     if (hasBaseline) {
       const bf = leaves.map((t) => t.baselineFinish).filter(Boolean).sort();

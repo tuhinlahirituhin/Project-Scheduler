@@ -343,9 +343,13 @@ PS.report = (function () {
       { header: 'Finish', width: 11, value: (t) => dateOf(t.finish), fmt: 'dd-mmm-yy', align: 'center' },
       { header: 'Predecessors', width: 16, value: (t) => PS.schedule.formatPreds(t, res.byId) },
       { header: 'Man-hours', width: 11, value: (t) => U.round(t._mh || 0, 1), fmt: '#,##0.0', align: 'right' },
+      { header: 'Weight %', width: 9, value: (t) => (t._wt || 0) / 100, fmt: '0.00%', align: 'center' },
+      { header: 'Unit', width: 8, value: (t) => (t._summary ? null : t.unit || null), align: 'center' },
+      { header: 'Scope quantity', width: 11, value: (t) => (t._summary || !(t.qty > 0) ? null : Number(t.qty)), fmt: '#,##0.##', align: 'right' },
+      { header: 'Quantity done', width: 11, value: (t) => (t._summary || !(t.qty > 0) ? null : U.round(t._qtyDone || 0, 3)), fmt: '#,##0.##', align: 'right' },
       { header: 'Crew', width: 6, value: (t) => (t._summary ? null : t.crew || null), align: 'center' },
       { header: 'Resource', width: 16, value: (t) => (t._summary ? null : t.resource || null) },
-      { header: 'Norm', width: 30, value: (t) => (t.normId ? normName(t.normId) + (t.qty ? ' × ' + t.qty : '') : null) },
+      { header: 'Norm', width: 30, value: (t) => (t.normId ? normName(t.normId) : t.rate != null ? 'Own norm: ' + t.rate + ' MH/' + (t.unit || 'unit') : null) },
       { header: '% done', width: 9, value: (t) => (t.pct || 0) / 100, fmt: '0%', align: 'center' },
       { header: 'Planned % at status', width: 10, value: (t) => t._planFrac || 0, fmt: '0%', align: 'center' },
       { header: 'Earned MH', width: 10, value: (t) => U.round(t._ev || 0, 1), fmt: '#,##0.0', align: 'right' },
@@ -359,10 +363,11 @@ PS.report = (function () {
       { header: 'Actual finish', width: 11, value: (t) => dateOf(t.actualFinish), fmt: 'dd-mmm-yy', align: 'center' },
       { header: 'Notes', width: 30, value: (t) => t.notes || null },
     ];
+    const statusCol = cols.findIndex((c) => c.header === 'Status') + 1;
     // data rows start at row 4 (header at row 3)
     table(ws, 3, cols, list, {
       rowStyle: (row, t) => {
-        if (t._summary) row.eachCell({ includeEmpty: true }, (c, n) => { if (n <= cols.length && n !== 18) { c.fill = fill('#eef1f3'); c.font = Object.assign({}, c.font, { bold: true }); } });
+        if (t._summary) row.eachCell({ includeEmpty: true }, (c, n) => { if (n <= cols.length && n !== statusCol) { c.fill = fill('#eef1f3'); c.font = Object.assign({}, c.font, { bold: true }); } });
         if (t.level > 0 && t.level <= 7 && name === 'Schedule') row.outlineLevel = t.level;
       },
     });
@@ -411,6 +416,19 @@ PS.report = (function () {
     const g = PS.analytics.group(project, res, 'resource', 'manhours');
     const e = PS.analytics.group(project, res, 'resource', 'earned');
     const n = PS.analytics.group(project, res, 'resource', 'count');
+    const logRows = [];
+    project.tasks.forEach((t) => (t.progressLog || []).forEach((e) => logRows.push({ t, e })));
+    logRows.sort((a, b) => (a.e.date < b.e.date ? -1 : a.e.date > b.e.date ? 1 : a.t._row - b.t._row));
+    if (logRows.length) simpleSheet(wb, 'Progress log', project, 'Quantities recorded on the Progress entry sheet. % complete = quantity done ÷ scope quantity.', [
+      { header: 'Date', width: 12, value: (x) => dateOf(x.e.date), fmt: 'dd-mmm-yy', align: 'center' },
+      { header: 'WBS', width: 8, value: (x) => x.t._wbs },
+      { header: 'Activity', width: 40, value: (x) => x.t.name },
+      { header: 'Unit', width: 8, value: (x) => x.t.unit || null, align: 'center' },
+      { header: 'Quantity', width: 11, value: (x) => Number(x.e.qty), fmt: '#,##0.##', align: 'right' },
+      { header: 'Scope quantity', width: 12, value: (x) => Number(x.t.qty) || null, fmt: '#,##0.##', align: 'right' },
+      { header: 'Weight %', width: 10, value: (x) => (x.t._wt || 0) / 100, fmt: '0.00%', align: 'center' },
+      { header: 'Weighted progress', width: 12, value: (x) => (x.t.qty > 0 ? (x.t._wt || 0) / 100 * Number(x.e.qty) / x.t.qty : null), fmt: '0.00%', align: 'center' },
+    ], logRows);
     simpleSheet(wb, 'By resource', project, 'Man-hours by resource or crew.', [
       { header: 'Resource / crew', width: 28, key: 'r' },
       { header: 'Activities', width: 11, key: 'n', align: 'center' },

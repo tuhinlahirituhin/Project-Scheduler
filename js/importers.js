@@ -5,7 +5,7 @@ PS.importers = (function () {
   const U = PS.util;
 
   const FIELDS = [
-    { key: 'name', label: 'Task name', required: true, syn: ['task name', 'name', 'activity name', 'activity', 'task', 'activity description', 'task description', 'description', 'work item', 'item', 'title', 'scope', 'particulars', 'description of work'] },
+    { key: 'name', label: 'Task name', required: true, syn: ['task name', 'name', 'activity name', 'activity', 'task', 'activity description', 'task description', 'description', 'work item', 'item', 'title', 'particulars', 'description of work'] },
     { key: 'id', label: 'ID (used by predecessors)', syn: ['id', 'task id', 'activity id', 'unique id', 'uid', 's no', 'sl no', 'sr no', 'serial', 'serial no', 'no', 'item no', '#'] },
     { key: 'wbs', label: 'WBS code', syn: ['wbs', 'wbs code', 'outline number', 'code', 'wbs no', 'wbs id'] },
     { key: 'level', label: 'Outline level', syn: ['outline level', 'level', 'indent', 'hierarchy', 'hierarchy level', 'indent level'] },
@@ -16,6 +16,9 @@ PS.importers = (function () {
     { key: 'actualFinish', label: 'Actual finish', syn: ['actual finish', 'actual finish date', 'actual end', 'actual end date', 'completed on'] },
     { key: 'preds', label: 'Predecessors', syn: ['predecessors', 'predecessor', 'preds', 'depends on', 'dependencies', 'dependency', 'links', 'predecessor ids', 'after'] },
     { key: 'manhours', label: 'Man-hours', syn: ['work', 'man hours', 'manhours', 'man-hours', 'mh', 'effort', 'effort hrs', 'hours', 'labour hours', 'labor hours', 'work hours', 'budgeted labor units', 'budgeted labour units', 'labor units', 'labour units', 'budgeted units', 'planned hours', 'estimated hours', 'est hours', 'planned man hours', 'total man hours'] },
+    { key: 'unit', label: 'Unit of measure', syn: ['unit', 'uom', 'unit of measure', 'units', 'u o m', 'unit of measurement'] },
+    { key: 'qtyDone', label: 'Quantity done', syn: ['quantity done', 'qty done', 'done qty', 'done quantity', 'installed quantity', 'installed qty', 'actual quantity', 'actual qty', 'completed quantity', 'completed qty', 'cumulative quantity', 'quantity to date', 'qty to date', 'progress quantity', 'executed quantity', 'executed qty'] },
+    { key: 'qty', label: 'Scope quantity', syn: ['scope quantity', 'scope qty', 'quantity', 'qty', 'scope', 'total quantity', 'total qty', 'planned quantity', 'budget quantity', 'budgeted quantity', 'boq quantity', 'boq qty', 'design quantity'] },
     { key: 'crew', label: 'Crew size', syn: ['crew', 'crew size', 'manpower', 'workers', 'no of workers', 'headcount', 'resource count'] },
     { key: 'resource', label: 'Resource / crew name', syn: ['resource names', 'resource name', 'resource', 'resources', 'assigned to', 'owner', 'responsible', 'trade', 'contractor'] },
     { key: 'pct', label: '% complete', syn: ['% complete', 'percent complete', 'progress', '% done', 'complete', 'pct', 'physical % complete', 'activity % complete', 'percentage complete', '% progress', 'progress %', 'completion %', '% completion'] },
@@ -37,7 +40,7 @@ PS.importers = (function () {
         reader.onload = () => {
           const text = String(reader.result);
           try {
-            if (ext === 'json') resolve({ kind: 'project', project: parseBackup(text) });
+            if (ext === 'json') { const b = parseBackup(text); resolve(b.planline === 'bundle' ? { kind: 'bundle', projects: b.projects } : { kind: 'project', project: b }); }
             else if (ext === 'xer') resolve({ kind: 'project', project: parseXER(text) });
             else resolve({ kind: 'project', project: parseMSPDI(text) });
           } catch (e) { resolve({ kind: 'error', message: e.message }); }
@@ -223,6 +226,12 @@ PS.importers = (function () {
       if (mh != null) t.manhours = mh;
       const crew = num(get(r, 'crew'));
       if (crew != null) t.crew = crew;
+      const unit = str(get(r, 'unit'));
+      if (unit) t.unit = unit;
+      const qty = num(get(r, 'qty'));
+      if (qty != null && qty > 0) t.qty = qty;
+      const done = num(get(r, 'qtyDone'));
+      if (done != null && done > 0) t._qtyDone = done;
       const res = str(get(r, 'resource'));
       if (res) t.resource = res;
       let pct = num(get(r, 'pct'));
@@ -292,13 +301,24 @@ PS.importers = (function () {
     // With no progress recorded, the plan is shown as written rather than moving unstarted work to today.
     const dated = [];
     tasks.forEach((t) => { if (t._start) dated.push(t._start); if (t._finish && t._finish !== t._start) dated.push(t._finish); });
+    tasks.forEach((t) => { if (t._qtyDone && t.qty > 0) t.pct = U.round(U.clamp(100 * t._qtyDone / t.qty, 0, 100), 2); });
     let progressDate = '';
     tasks.forEach((t) => {
       [t.actualStart, t.actualFinish, t.pct >= 100 ? t._finish : '', t.pct > 0 ? t._start : ''].forEach((d) => { if (d && d > progressDate) progressDate = d; });
     });
-    const anyProgress = tasks.some((t) => t.pct > 0 || t.actualStart);
+    const anyProgress = tasks.some((t) => t.pct > 0 || t.actualStart || t._qtyDone);
     const today = U.todayISO();
     const statusDate = anyProgress ? (progressDate && progressDate < today ? progressDate : null) : (startDate && startDate < today ? startDate : null);
+    // quantity done so far becomes one progress entry on the status date
+    tasks.forEach((t) => {
+      if (t._qtyDone) {
+        const d = statusDate || today;
+        t.progressLog = [{ date: d, qty: t._qtyDone }];
+        if (!t.actualStart) t.actualStart = d < (t._start || d) ? d : (t._start || d);
+        if (t.qty > 0) { t.pct = U.round(U.clamp(100 * t._qtyDone / t.qty, 0, 100), 2); if (t._qtyDone >= t.qty && !t.actualFinish) t.actualFinish = d; }
+      }
+      delete t._qtyDone;
+    });
     tasks.forEach((t) => {
       if (t.duration == null && t._start && t._finish && opts.calendar) {
         const c = U.Calendar(startDate || t._start, opts.calendar);
@@ -552,6 +572,7 @@ PS.importers = (function () {
 
   function parseBackup(text) {
     const p = JSON.parse(text);
+    if (p && p.planline === 'bundle' && Array.isArray(p.projects)) return p;
     if (!p || !Array.isArray(p.tasks)) throw new Error('This file is not a Planline project backup.');
     return p;
   }

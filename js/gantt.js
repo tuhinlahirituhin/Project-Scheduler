@@ -37,6 +37,7 @@ PS.gantt = (function () {
     // ---------- header
     headEl.innerHTML = '';
     const hs = el('svg', { width: W, height: headH - 1, 'aria-hidden': 'true' }, headEl);
+    el('rect', { x: 0, y: 0, width: W, height: headH, fill: 'var(--surface-2)' }, hs);
     const half = (headH - 1) / 2;
     el('line', { x1: 0, x2: W, y1: half, y2: half, stroke: 'var(--line)' }, hs);
     const textAt = (x, y, s, cls) => { const t = el('text', { x, y, fill: cls === 'top' ? 'var(--ink)' : 'var(--ink-2)', 'font-size': cls === 'top' ? 11.5 : 11, 'font-weight': cls === 'top' ? 600 : 400 }, hs); t.textContent = s; return t; };
@@ -80,6 +81,22 @@ PS.gantt = (function () {
       el('path', { d: 'M0 0 L8 4 L0 8 z', fill: color }, m);
     };
     mk('arr', 'var(--ink-3)'); mk('arr-c', 'var(--crit)');
+    if (opts.animate) svg.classList.add('anim');
+    // one colour per top-level phase, with a soft vertical gradient
+    const tops = project.tasks.filter((x) => x.level === 0).map((x) => x.id);
+    const PAL = ['--s1', '--s3', '--s2', '--s7', '--s4', '--s5', '--s6', '--s8'];
+    PAL.forEach((v, k) => {
+      const lg2 = el('linearGradient', { id: 'gb' + k, x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+      el('stop', { offset: '0%', 'stop-color': `color-mix(in srgb, var(${v}) 70%, white)` }, lg2);
+      el('stop', { offset: '100%', 'stop-color': `var(${v})` }, lg2);
+    });
+    const gc = el('linearGradient', { id: 'gcrit', x1: 0, y1: 0, x2: 1, y2: 0 }, defs);
+    el('stop', { offset: '0%', 'stop-color': 'var(--crit)' }, gc);
+    el('stop', { offset: '100%', 'stop-color': 'var(--s2)' }, gc);
+    const phaseOf = (t) => {
+      const top = t.level === 0 ? t.id : (t._ancestors && t._ancestors.length ? t._ancestors[t._ancestors.length - 1] : t.id);
+      return Math.max(0, tops.indexOf(top)) % PAL.length;
+    };
 
     const bg = el('g', {}, svg);
     // non-working days and grid
@@ -157,22 +174,21 @@ PS.gantt = (function () {
       const yOff = hasBL && !t._summary ? -3 : 0;
       if (t._summary) {
         const w = Math.max(x2 - x1, 2);
-        el('rect', { x: x1, y: yc - 4, width: w, height: 7, rx: 1.5, fill: 'var(--summary)' }, grp);
-        if (t.pct > 0) el('rect', { x: x1, y: yc - 4, width: w * t.pct / 100, height: 3, fill: t.critical ? 'var(--crit)' : 'var(--s1)' }, grp);
+        el('rect', { x: x1, y: yc - 4, width: w, height: 7, rx: 1.5, fill: 'var(--summary)', class: 'bar' }, grp);
+        if (t.pct > 0) el('rect', { x: x1, y: yc - 4, width: w * t.pct / 100, height: 3, fill: t.critical ? 'var(--crit)' : `var(${PAL[phaseOf(t)]})`, class: 'bar' }, grp);
         el('path', { d: `M${x1} ${yc + 3} v5 l5 -5 z M${x1 + w} ${yc + 3} v5 l-5 -5 z`, fill: 'var(--summary)' }, grp);
       } else if (t.milestone) {
         const cx = x1, cy = yc + yOff;
-        el('path', { d: `M${cx} ${cy - 8} L${cx + 8} ${cy} L${cx} ${cy + 8} L${cx - 8} ${cy} z`, fill: t.pct >= 100 ? 'var(--bar-done)' : t.critical ? 'var(--crit)' : 'var(--ink)', stroke: 'var(--surface)', 'stroke-width': 1.5 }, grp);
+        el('path', { d: `M${cx} ${cy - 8} L${cx + 8} ${cy} L${cx} ${cy + 8} L${cx - 8} ${cy} z`, fill: t.pct >= 100 ? 'var(--good)' : t.critical ? 'var(--crit)' : 'var(--s4)', stroke: 'var(--surface)', 'stroke-width': 1.5, class: 'ms' }, grp);
         labelX = cx + 12;
         const tx = el('text', { x: labelX, y: cy + 4, 'font-size': 11, fill: 'var(--ink-2)' }, grp);
         tx.textContent = U.fmtDate(t.finish);
         labelX = null;
       } else {
         const w = Math.max(x2 - x1, 3);
-        const col = t.critical ? 'var(--crit)' : 'var(--bar)';
-        const ink = t.critical ? 'var(--crit-ink)' : 'var(--bar-ink)';
-        el('rect', { x: x1, y: yc - 7 + yOff, width: w, height: 14, rx: 4, fill: col, opacity: t.pct >= 100 ? 0.55 : 0.9 }, grp);
-        if (t.pct > 0) el('rect', { x: x1, y: yc - 7 + yOff, width: w * t.pct / 100, height: 14, rx: 4, fill: ink, opacity: 0.9 }, grp);
+        const col = t.critical ? 'url(#gcrit)' : `url(#gb${phaseOf(t)})`;
+        el('rect', { x: x1, y: yc - 7 + yOff, width: w, height: 14, rx: 7, fill: col, opacity: t.pct >= 100 ? 0.6 : 1, class: 'bar' }, grp);
+        if (t.pct > 0) el('rect', { x: x1, y: yc - 7 + yOff, width: w * t.pct / 100, height: 14, rx: 7, fill: 'rgba(10,20,40,.32)', class: 'bar prog' }, grp);
         if (t._cycle) el('rect', { x: x1 - 2, y: yc - 9 + yOff, width: w + 4, height: 18, rx: 5, fill: 'none', stroke: 'var(--critical)', 'stroke-dasharray': '3 2' }, grp);
       }
       if (labelX != null) {

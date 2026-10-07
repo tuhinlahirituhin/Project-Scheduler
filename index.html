@@ -33,6 +33,12 @@
     <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
     <symbol id="i-chev" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5l3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-image" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m3 12 3.5-4 2.5 3 1.5-1.5L13 12" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.4" fill="none"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M5.5 7V5a2.5 2.5 0 0 1 4.9-.6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h3l1.5 1.5h4.5A1.5 1.5 0 0 1 14 6v5.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5z" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M11 3.5V3a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6.5a1 1 0 0 0 1 1H4" stroke="currentColor" stroke-width="1.4" fill="none"/></symbol>
+    <symbol id="i-left" viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-right" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-flag" viewBox="0 0 16 16"><path d="M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
@@ -45,7 +51,7 @@
   <div class="proj-picker">
     <label for="proj-select" class="eyebrow hide-sm">Project</label>
     <select id="proj-select" aria-label="Current project"></select>
-    <button class="btn ghost" id="btn-projects" type="button">Manage</button>
+    <button class="btn ghost" id="btn-projects" type="button"><svg><use href="#i-folder"/></svg><span class="hide-sm">Projects</span></button>
   </div>
   <span class="saved" id="saved" aria-live="polite">Saved in this browser</span>
   <span class="spacer"></span>
@@ -67,6 +73,7 @@
 
 <nav class="tabs" role="tablist" aria-label="Views">
   <button role="tab" data-view="schedule" aria-selected="true">Schedule</button>
+  <button role="tab" data-view="progress" aria-selected="false">Progress entry</button>
   <button role="tab" data-view="dashboard" aria-selected="false">Dashboard</button>
   <button role="tab" data-view="norms" aria-selected="false">Man-hour norms</button>
   <button role="tab" data-view="settings" aria-selected="false">Project settings</button>
@@ -86,8 +93,19 @@
       <button class="btn icon" id="tb-up" type="button" title="Move up (Alt+↑)" aria-label="Move up"><svg><use href="#i-up"/></svg></button>
       <button class="btn icon" id="tb-down" type="button" title="Move down (Alt+↓)" aria-label="Move down"><svg><use href="#i-down"/></svg></button>
       <span class="sep"></span>
-      <button class="btn" id="tb-link" type="button" title="Link selected tasks finish-to-start in order"><svg><use href="#i-link"/></svg>Link</button>
+      <details class="menu link-menu" id="link-menu">
+        <summary class="btn" title="Link the selected tasks in row order"><svg><use href="#i-link"/></svg>Link</summary>
+        <div class="menu-list">
+          <div class="eyebrow" style="padding:4px 8px 6px">Link selected tasks in row order</div>
+          <button type="button" data-link="FS"><b>Finish → Start</b><small>Next starts after previous finishes</small></button>
+          <button type="button" data-link="SS"><b>Start → Start</b><small>Next starts when previous starts</small></button>
+          <button type="button" data-link="FF"><b>Finish → Finish</b><small>Next finishes when previous finishes</small></button>
+          <button type="button" data-link="SF"><b>Start → Finish</b><small>Next finishes when previous starts</small></button>
+          <label class="lag-row">Lag <input type="number" id="link-lag" value="0" step="1" aria-label="Lag in working days"> working days <span class="muted">(negative = lead)</span></label>
+        </div>
+      </details>
       <button class="btn icon" id="tb-unlink" type="button" title="Remove links between selected tasks" aria-label="Unlink"><svg><use href="#i-unlink"/></svg></button>
+      <button class="btn icon" id="tb-lock" type="button" title="Lock the schedule so it cannot be changed" aria-label="Lock schedule" aria-pressed="false"><svg><use href="#i-unlock"/></svg></button>
       <button class="btn icon danger" id="tb-del" type="button" title="Delete selected (Delete)" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
       <span class="sep"></span>
       <button class="btn icon" id="tb-undo" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg><use href="#i-undo"/></svg></button>
@@ -102,6 +120,7 @@
       <button class="btn" id="tb-today" type="button" title="Scroll timeline to the status date"><svg><use href="#i-flag"/></svg><span class="hide-sm">Status date</span></button>
       <button class="btn icon" id="tb-panel" type="button" title="Show or hide task details" aria-label="Task details" aria-pressed="true"><svg><use href="#i-panel"/></svg></button>
     </div>
+    <div class="lockbar" id="lockbar" hidden><svg><use href="#i-lock"/></svg><span>The schedule is locked. Progress can still be recorded; unlock it to change tasks, dates, links or man-hours.</span><button class="btn" type="button" id="lockbar-unlock">Unlock</button></div>
     <div class="errbar" id="errbar" hidden></div>
     <div class="workarea">
       <div class="split" id="split">
@@ -114,6 +133,11 @@
       </div>
       <aside class="details" id="details" aria-label="Task details"></aside>
     </div>
+  </section>
+
+  <!-- PROGRESS ENTRY -->
+  <section class="view" id="view-progress" hidden>
+    <div class="page wide" id="progress"></div>
   </section>
 
   <!-- DASHBOARD -->
@@ -159,6 +183,7 @@
 <script src="js/report.js"></script>
 <script src="js/gantt.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/progress.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
