@@ -4,6 +4,9 @@ A free, server-free project scheduler that runs entirely in the browser.
 
 - **WBS** with unlimited sub-activities (indent / outdent), summary roll-ups and WBS codes
 - **Import** from any Excel/CSV layout (columns matched by name, adjustable), rows pasted from a spreadsheet, MS Project / ProjectLibre XML, Primavera P6 .xer, or a Planline backup
+  - The task hierarchy comes from an outline-level column, WBS codes, outline-style IDs (A, A.1), Excel cell indentation, or heading rows with no dates
+  - Primavera layout exports work too: repeated WBS codes become summary rows and dates flagged "A" become actual dates
+  - The status date and working week are inferred from the sheet's progress and dates; MS Project XML brings its status date and holidays
 - **Man-hours** typed in, or calculated from an editable library of indicative industry norms (quantity × MH/unit × productivity factor); duration can be derived from man-hours ÷ (crew × hours/day)
 - **Scheduling logic**: FS / SS / FF / SF links with lead/lag, critical path, total float, working calendar with holidays, "start no earlier than" dates, status-date rescheduling, baseline
 - **Gantt chart** with dependency arrows, critical path, progress, baseline bars and day / week / month zoom

@@ -827,13 +827,14 @@ window.PS = window.PS || {};
     const rows = imp.result.sheets[imp.sheet];
     imp.header = PS.importers.detectHeader(rows);
     imp.map = PS.importers.autoMap(rows[imp.header] || []);
+    imp.dateOrder = PS.importers.guessDateOrder(rows.slice(imp.header + 1), imp.map) || imp.dateOrder;
   }
   function importPreview() {
     const r = imp.result;
     if (r.kind === 'project') return { tasks: r.project.tasks, startDate: r.project.startDate, warnings: [] };
     const rows = r.sheets[imp.sheet];
     if (imp.map.name == null) return { tasks: [], warnings: ['Choose which column holds the task names.'] };
-    return PS.importers.buildTasks(rows.slice(imp.header + 1), imp.map, { hoursPerDay: hpd(), daysPerWeek: dpw(), dateOrder: imp.dateOrder, lockDates: imp.lock, calendar: app.project.calendar });
+    return PS.importers.buildTasks(rows.slice(imp.header + 1), imp.map, { hoursPerDay: hpd(), daysPerWeek: dpw(), dateOrder: imp.dateOrder, lockDates: imp.lock, calendar: app.project.calendar, fmt: ((r.fmt && r.fmt[imp.sheet]) || []).slice(imp.header + 1) });
   }
   function renderImportStep2() {
     const r = imp.result;
@@ -881,11 +882,13 @@ window.PS = window.PS || {};
     }
     if (imp.mode === 'new') {
       const base = imp.file.name.replace(/\.[^.]+$/, '');
-      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined, statusDate: r.project.statusDate || undefined } : { name: base };
+      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined, statusDate: r.project.statusDate || undefined }
+        : { name: base, calendar: pv.workDays ? { workDays: pv.workDays, hoursPerDay: hpd(), holidays: [] } : undefined };
       if (!extra.statusDate) delete extra.statusDate;
       if (!extra.calendar) delete extra.calendar;
       const p = newProject(extra.name, extra);
       p.startDate = pv.startDate || U.todayISO();
+      if (r.kind === 'table' && pv.statusDate) p.statusDate = pv.statusDate;
       p.tasks = incoming;
       $('#dlg-import').close();
       openProject(p);
@@ -910,7 +913,7 @@ window.PS = window.PS || {};
       if (t.id === 'imp-paste') return;
       if (t.name === 'imode') imp.mode = t.value;
       if (t.id === 'imp-sheet') { imp.sheet = t.value; setupSheet(); }
-      if (t.id === 'imp-header') { imp.header = Math.max(0, (+t.value || 1) - 1); imp.map = PS.importers.autoMap(imp.result.sheets[imp.sheet][imp.header] || []); }
+      if (t.id === 'imp-header') { imp.header = Math.max(0, (+t.value || 1) - 1); imp.map = PS.importers.autoMap(imp.result.sheets[imp.sheet][imp.header] || []); imp.dateOrder = PS.importers.guessDateOrder(imp.result.sheets[imp.sheet].slice(imp.header + 1), imp.map) || imp.dateOrder; }
       if (t.id === 'imp-dates') imp.dateOrder = t.value;
       if (t.id === 'imp-lock') imp.lock = t.checked;
       if (t.dataset.map) { if (t.value === '') delete imp.map[t.dataset.map]; else imp.map[t.dataset.map] = +t.value; }
