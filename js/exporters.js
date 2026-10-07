@@ -16,9 +16,13 @@ PS.exporters = (function () {
       'Finish': t.finish,
       'Predecessors': PS.schedule.formatPreds(t, res.byId),
       'Man-hours': U.round(t._mh || 0, 2),
+      'Weight %': U.round(t._wt || 0, 3),
+      'Unit': t._summary ? '' : (t.unit || ''),
+      'Scope quantity': t._summary ? '' : (t.qty || ''),
+      'Quantity done': t._summary || !(t.qty > 0) ? '' : U.round(t._qtyDone || 0, 3),
       'Crew': t._summary ? '' : (t.crew || ''),
       'Resource': t._summary ? '' : (t.resource || ''),
-      'Norm': t.normId ? (normName(t.normId) + (t.qty ? ' × ' + t.qty : '')) : '',
+      'Norm': t.normId ? normName(t.normId) : t.rate != null ? 'Own norm ' + t.rate + ' MH/' + (t.unit || 'unit') : '',
       '% Complete': U.round(t.pct || 0, 1),
       'Earned man-hours': U.round(t._ev || 0, 2),
       'Planned % at status date': U.round((t._planFrac || 0) * 100, 1),
@@ -106,16 +110,21 @@ PS.exporters = (function () {
     U.download(U.safeName(project.name) + '.planline.json', JSON.stringify(clean, null, 1), 'application/json');
   }
 
+  function bundle(projects) {
+    const clean = projects.map((p) => JSON.parse(JSON.stringify(p, (k, v) => (k.startsWith('_') ? undefined : v))));
+    U.download('planline_all_projects_' + U.todayISO() + '.planline.json', JSON.stringify({ planline: 'bundle', version: 1, saved: new Date().toISOString(), projects: clean }), 'application/json');
+  }
+
   function template() {
     if (typeof XLSX === 'undefined') throw new Error('The spreadsheet library did not load.');
     const rows = [
-      { 'ID': 1, 'WBS': '1', 'Task name': 'Design phase', 'Duration': '', 'Start': '', 'Predecessors': '', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': '' },
-      { 'ID': 2, 'WBS': '1.1', 'Task name': 'Concept drawings', 'Duration': '5d', 'Start': '2026-11-02', 'Predecessors': '', 'Man-hours': 120, 'Crew': 3, 'Resource': 'Design office', '% Complete': 0 },
-      { 'ID': 3, 'WBS': '1.2', 'Task name': 'Client approval', 'Duration': 0, 'Start': '', 'Predecessors': '2', 'Man-hours': '', 'Crew': '', 'Resource': 'Client', '% Complete': 0 },
-      { 'ID': 4, 'WBS': '2', 'Task name': 'Construction', 'Duration': '', 'Start': '', 'Predecessors': '', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': '' },
-      { 'ID': 5, 'WBS': '2.1', 'Task name': 'Excavation', 'Duration': '8d', 'Start': '', 'Predecessors': '3', 'Man-hours': 320, 'Crew': 5, 'Resource': 'Civil crew', '% Complete': 0 },
-      { 'ID': 6, 'WBS': '2.2', 'Task name': 'Foundations', 'Duration': '2w', 'Start': '', 'Predecessors': '5SS+3d', 'Man-hours': 640, 'Crew': 8, 'Resource': 'Civil crew', '% Complete': 0 },
-      { 'ID': 7, 'WBS': '2.3', 'Task name': 'Handover', 'Duration': 0, 'Start': '', 'Predecessors': '6', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': 0 },
+      { 'ID': 1, 'WBS': '1', 'Task name': 'Design phase', 'Duration': '', 'Start': '', 'Predecessors': '', 'Unit': '', 'Scope quantity': '', 'Quantity done': '', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': '' },
+      { 'ID': 2, 'WBS': '1.1', 'Task name': 'Concept drawings', 'Duration': '5d', 'Start': '2026-11-02', 'Predecessors': '', 'Unit': 'sheet', 'Scope quantity': 6, 'Quantity done': 2, 'Man-hours': 120, 'Crew': 3, 'Resource': 'Design office', '% Complete': 0 },
+      { 'ID': 3, 'WBS': '1.2', 'Task name': 'Client approval', 'Duration': 0, 'Start': '', 'Predecessors': '2', 'Unit': '', 'Scope quantity': '', 'Quantity done': '', 'Man-hours': '', 'Crew': '', 'Resource': 'Client', '% Complete': 0 },
+      { 'ID': 4, 'WBS': '2', 'Task name': 'Construction', 'Duration': '', 'Start': '', 'Predecessors': '', 'Unit': '', 'Scope quantity': '', 'Quantity done': '', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': '' },
+      { 'ID': 5, 'WBS': '2.1', 'Task name': 'Excavation', 'Duration': '8d', 'Start': '', 'Predecessors': '3', 'Unit': 'm³', 'Scope quantity': 450, 'Quantity done': '', 'Man-hours': 320, 'Crew': 5, 'Resource': 'Civil crew', '% Complete': 0 },
+      { 'ID': 6, 'WBS': '2.2', 'Task name': 'Foundations', 'Duration': '2w', 'Start': '', 'Predecessors': '5SS+3d', 'Unit': 'm³', 'Scope quantity': 120, 'Quantity done': '', 'Man-hours': 640, 'Crew': 8, 'Resource': 'Civil crew', '% Complete': 0 },
+      { 'ID': 7, 'WBS': '2.3', 'Task name': 'Handover', 'Duration': 0, 'Start': '', 'Predecessors': '6', 'Unit': '', 'Scope quantity': '', 'Quantity done': '', 'Man-hours': '', 'Crew': '', 'Resource': '', '% Complete': 0 },
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheetFrom(rows), 'Tasks');
@@ -126,6 +135,7 @@ PS.exporters = (function () {
       { Column: 'Duration', Meaning: 'Working days. Accepts 5, 5d, 2w, 16h. 0 makes a milestone. Leave empty to calculate it from man-hours ÷ (crew × hours per day).' },
       { Column: 'Start', Meaning: 'Optional. Used as "start no earlier than" when a task has no predecessors.' },
       { Column: 'Predecessors', Meaning: 'Comma separated. 3 = finish-to-start, 3SS+2d = start-to-start with 2 days lag. Types: FS, SS, FF, SF.' },
+      { Column: 'Unit / Scope quantity / Quantity done', Meaning: 'Optional. Unit of measure (m, m³, MT, each...), total quantity, and quantity installed so far. Progress is then measured as done ÷ scope.' },
       { Column: 'Man-hours / Crew / Resource / % Complete', Meaning: 'Optional.' },
     ], [40, 110]), 'How to fill');
     XLSX.writeFile(wb, 'planline_import_template.xlsx');
@@ -183,9 +193,9 @@ PS.exporters = (function () {
 
   function normsExcel(norms) {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheetFrom(norms.map((n) => ({ Category: n.cat, Activity: n.name, Unit: n.unit, 'Man-hours per unit': n.mh, Note: n.note || '' }))), 'Norms');
+    XLSX.utils.book_append_sheet(wb, sheetFrom(norms.map((n) => ({ Sector: n.sector || '', Category: n.cat, Activity: n.name, Unit: n.unit, 'Man-hours per unit': n.mh, Note: n.note || '' }))), 'Norms');
     XLSX.writeFile(wb, 'planline_manhour_norms.xlsx');
   }
 
-  return { excel, csv, backup, template, mspdi, normsExcel };
+  return { excel, csv, backup, bundle, template, mspdi, normsExcel };
 })();

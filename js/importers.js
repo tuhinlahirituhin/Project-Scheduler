@@ -5,18 +5,23 @@ PS.importers = (function () {
   const U = PS.util;
 
   const FIELDS = [
-    { key: 'name', label: 'Task name', required: true, syn: ['task name', 'name', 'activity name', 'activity', 'task', 'activity description', 'description', 'work item', 'item', 'title'] },
-    { key: 'id', label: 'ID (used by predecessors)', syn: ['id', 'task id', 'activity id', 'unique id', 'uid', 's no', 'sl no', 'sr no', 'serial', '#'] },
-    { key: 'wbs', label: 'WBS code', syn: ['wbs', 'wbs code', 'outline number', 'code', 'wbs no'] },
-    { key: 'level', label: 'Outline level', syn: ['outline level', 'level', 'indent', 'hierarchy', 'hierarchy level'] },
-    { key: 'duration', label: 'Duration', syn: ['duration', 'dur', 'original duration', 'planned duration', 'duration days', 'days'] },
-    { key: 'start', label: 'Start date', syn: ['start', 'start date', 'planned start', 'begin', 'early start', 'scheduled start'] },
-    { key: 'finish', label: 'Finish date', syn: ['finish', 'finish date', 'end', 'end date', 'planned finish', 'early finish', 'scheduled finish'] },
-    { key: 'preds', label: 'Predecessors', syn: ['predecessors', 'predecessor', 'preds', 'depends on', 'dependencies', 'dependency', 'links'] },
-    { key: 'manhours', label: 'Man-hours', syn: ['work', 'man hours', 'manhours', 'man-hours', 'mh', 'effort', 'effort hrs', 'hours', 'labour hours', 'labor hours', 'work hours'] },
+    { key: 'name', label: 'Task name', required: true, syn: ['task name', 'name', 'activity name', 'activity', 'task', 'activity description', 'task description', 'description', 'work item', 'item', 'title', 'particulars', 'description of work'] },
+    { key: 'id', label: 'ID (used by predecessors)', syn: ['id', 'task id', 'activity id', 'unique id', 'uid', 's no', 'sl no', 'sr no', 'serial', 'serial no', 'no', 'item no', '#'] },
+    { key: 'wbs', label: 'WBS code', syn: ['wbs', 'wbs code', 'outline number', 'code', 'wbs no', 'wbs id'] },
+    { key: 'level', label: 'Outline level', syn: ['outline level', 'level', 'indent', 'hierarchy', 'hierarchy level', 'indent level'] },
+    { key: 'duration', label: 'Duration', syn: ['duration', 'dur', 'original duration', 'planned duration', 'duration days', 'days', 'baseline duration', 'remaining duration', 'no of days'] },
+    { key: 'start', label: 'Start date', syn: ['start', 'start date', 'planned start', 'begin', 'early start', 'scheduled start', 'from', 'planned start date', 'baseline start', 'target start'] },
+    { key: 'finish', label: 'Finish date', syn: ['finish', 'finish date', 'end', 'end date', 'planned finish', 'early finish', 'scheduled finish', 'to', 'due', 'due date', 'completion date', 'planned finish date', 'planned end', 'baseline finish', 'target finish'] },
+    { key: 'actualStart', label: 'Actual start', syn: ['actual start', 'actual start date', 'started on'] },
+    { key: 'actualFinish', label: 'Actual finish', syn: ['actual finish', 'actual finish date', 'actual end', 'actual end date', 'completed on'] },
+    { key: 'preds', label: 'Predecessors', syn: ['predecessors', 'predecessor', 'preds', 'depends on', 'dependencies', 'dependency', 'links', 'predecessor ids', 'after'] },
+    { key: 'manhours', label: 'Man-hours', syn: ['work', 'man hours', 'manhours', 'man-hours', 'mh', 'effort', 'effort hrs', 'hours', 'labour hours', 'labor hours', 'work hours', 'budgeted labor units', 'budgeted labour units', 'labor units', 'labour units', 'budgeted units', 'planned hours', 'estimated hours', 'est hours', 'planned man hours', 'total man hours'] },
+    { key: 'unit', label: 'Unit of measure', syn: ['unit', 'uom', 'unit of measure', 'units', 'u o m', 'unit of measurement'] },
+    { key: 'qtyDone', label: 'Quantity done', syn: ['quantity done', 'qty done', 'done qty', 'done quantity', 'installed quantity', 'installed qty', 'actual quantity', 'actual qty', 'completed quantity', 'completed qty', 'cumulative quantity', 'quantity to date', 'qty to date', 'progress quantity', 'executed quantity', 'executed qty'] },
+    { key: 'qty', label: 'Scope quantity', syn: ['scope quantity', 'scope qty', 'quantity', 'qty', 'scope', 'total quantity', 'total qty', 'planned quantity', 'budget quantity', 'budgeted quantity', 'boq quantity', 'boq qty', 'design quantity'] },
     { key: 'crew', label: 'Crew size', syn: ['crew', 'crew size', 'manpower', 'workers', 'no of workers', 'headcount', 'resource count'] },
     { key: 'resource', label: 'Resource / crew name', syn: ['resource names', 'resource name', 'resource', 'resources', 'assigned to', 'owner', 'responsible', 'trade', 'contractor'] },
-    { key: 'pct', label: '% complete', syn: ['% complete', 'percent complete', 'progress', '% done', 'complete', 'pct', 'physical % complete'] },
+    { key: 'pct', label: '% complete', syn: ['% complete', 'percent complete', 'progress', '% done', 'complete', 'pct', 'physical % complete', 'activity % complete', 'percentage complete', '% progress', 'progress %', 'completion %', '% completion'] },
     { key: 'notes', label: 'Notes', syn: ['notes', 'remarks', 'comments', 'comment'] },
   ];
 
@@ -35,7 +40,7 @@ PS.importers = (function () {
         reader.onload = () => {
           const text = String(reader.result);
           try {
-            if (ext === 'json') resolve({ kind: 'project', project: parseBackup(text) });
+            if (ext === 'json') { const b = parseBackup(text); resolve(b.planline === 'bundle' ? { kind: 'bundle', projects: b.projects } : { kind: 'project', project: b }); }
             else if (ext === 'xer') resolve({ kind: 'project', project: parseXER(text) });
             else resolve({ kind: 'project', project: parseMSPDI(text) });
           } catch (e) { resolve({ kind: 'error', message: e.message }); }
@@ -46,16 +51,62 @@ PS.importers = (function () {
       if (typeof XLSX === 'undefined') { resolve({ kind: 'error', message: 'The spreadsheet reader did not load. Check your connection and reload the page.' }); return; }
       reader.onload = () => {
         try {
-          const wb = XLSX.read(new Uint8Array(reader.result), { type: 'array', cellDates: true });
-          const sheets = {};
-          wb.SheetNames.forEach((n) => {
-            sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '', blankrows: false });
+          // Dates stay as Excel serial numbers: converting them to JS dates shifts them by a day in some time zones.
+          // raw: text files (CSV) keep values exactly as typed, so "01.09.2025" or "1,2" are not reinterpreted.
+          const wb = XLSX.read(new Uint8Array(reader.result), { type: 'array', raw: true, bookFiles: true });
+          const sheets = {}, fmt = {};
+          let styles = null;
+          try { styles = readStyles(wb); } catch (e) { styles = null; }
+          wb.SheetNames.forEach((n, i) => {
+            const ws = wb.Sheets[n];
+            sheets[n] = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: true });
+            if (styles) { try { fmt[n] = sheetFormats(wb, ws, i, styles); } catch (e) { /* formatting is optional */ } }
           });
-          resolve({ kind: 'table', sheets, sheetNames: wb.SheetNames });
+          resolve({ kind: 'table', sheets, fmt, sheetNames: wb.SheetNames });
         } catch (e) { resolve({ kind: 'error', message: 'This spreadsheet could not be read: ' + e.message }); }
       };
       reader.readAsArrayBuffer(file);
     });
+  }
+
+  // ---------- cell indentation and bold, read from the xlsx parts (SheetJS does not expose them)
+  const xmlOf = (wb, path) => {
+    const f = wb.files && (wb.files[path] || wb.files['/' + path]);
+    if (!f || !f.content) return null;
+    return new DOMParser().parseFromString(new TextDecoder().decode(f.content), 'application/xml');
+  };
+  const kids = (el, tag) => (el ? [...el.children].filter((c) => c.localName === tag) : []);
+  function readStyles(wb) {
+    const doc = xmlOf(wb, 'xl/styles.xml');
+    if (!doc) return null;
+    const root = doc.documentElement;
+    const fonts = kids(kids(root, 'fonts')[0], 'font').map((f) => kids(f, 'b').some((b) => b.getAttribute('val') !== '0' && b.getAttribute('val') !== 'false'));
+    return kids(kids(root, 'cellXfs')[0], 'xf').map((xf) => {
+      const al = kids(xf, 'alignment')[0];
+      return { indent: al ? +(al.getAttribute('indent') || 0) : 0, bold: !!fonts[+(xf.getAttribute('fontId') || 0)] };
+    });
+  }
+  function sheetFormats(wb, ws, index, styles) {
+    const wbDoc = xmlOf(wb, 'xl/workbook.xml'), rels = xmlOf(wb, 'xl/_rels/workbook.xml.rels');
+    if (!wbDoc || !rels) return null;
+    const sheetEl = wbDoc.getElementsByTagNameNS('*', 'sheet')[index];
+    const rid = sheetEl && (sheetEl.getAttribute('r:id') || sheetEl.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'));
+    const rel = [...rels.getElementsByTagNameNS('*', 'Relationship')].find((r) => r.getAttribute('Id') === rid);
+    if (!rel) return null;
+    const target = rel.getAttribute('Target').replace(/^\/?xl\//, '').replace(/^\//, '');
+    const doc = xmlOf(wb, 'xl/' + target);
+    if (!doc) return null;
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const out = [];
+    for (const c of doc.getElementsByTagNameNS('*', 'c')) {
+      const st = styles[+(c.getAttribute('s') || 0)];
+      if (!st || (!st.indent && !st.bold)) continue;
+      const a = XLSX.utils.decode_cell(c.getAttribute('r'));
+      const r = a.r - range.s.r, col = a.c - range.s.c;
+      if (r < 0 || col < 0) continue;
+      (out[r] = out[r] || [])[col] = st;
+    }
+    return out;
   }
 
   function detectHeader(rows) {
@@ -73,9 +124,15 @@ PS.importers = (function () {
     const h = headers.map(norm);
     const used = new Set();
     const map = {};
+    // exact heading matches first for every field, so "Task ID" is never taken as the task name
     FIELDS.forEach((f) => {
-      let idx = h.findIndex((c, i) => !used.has(i) && f.syn.includes(c));
-      if (idx < 0) idx = h.findIndex((c, i) => !used.has(i) && c && f.syn.some((s) => s.length > 3 && c.includes(s)));
+      const idx = h.findIndex((c, i) => !used.has(i) && f.syn.includes(c));
+      if (idx >= 0) { map[f.key] = idx; used.add(idx); }
+    });
+    const idLike = /(^|\s)(id|no|code|ref|number|#)$/;
+    FIELDS.forEach((f) => {
+      if (map[f.key] != null) return;
+      const idx = h.findIndex((c, i) => !used.has(i) && c && !(f.key === 'name' && idLike.test(c)) && !(f.key !== 'actualStart' && f.key !== 'actualFinish' && /^actual\s/.test(c)) && f.syn.some((s) => s.length > 3 && c.includes(s)));
       if (idx >= 0) { map[f.key] = idx; used.add(idx); }
     });
     return map;
@@ -88,65 +145,147 @@ PS.importers = (function () {
     return m ? parseFloat(m[0]) : null;
   }
 
-  /* rows: array of arrays (data rows only). map: field -> column index. */
+  /* rows: array of arrays (data rows only). map: field -> column index.
+     opts.fmt: optional cell formats ({ indent, bold }) per row, aligned with rows. */
   function buildTasks(rows, map, opts) {
     opts = opts || {};
     const hpd = opts.hoursPerDay || 8;
     const dpw = opts.daysPerWeek || 5;
-    const get = (r, k) => (map[k] == null || map[k] === '' ? '' : r[map[k]]);
-    const data = rows.filter((r) => String(get(r, 'name')).trim() !== '');
+    const has = (k) => map[k] != null && map[k] !== '';
+    const get = (r, k) => (has(k) ? r[map[k]] : '');
+    const str = (v) => (v == null ? '' : String(v)).trim();
+    const fmtRows = opts.fmt || [];
+    const data = [];
+    rows.forEach((r, i) => { if (r && str(get(r, 'name')) !== '') data.push({ r, f: fmtRows[i] || [] }); });
     const warnings = [];
+    if (!data.length) return { tasks: [], warnings: ['No rows with a task name were found.'] };
 
     // percent scale: if every numeric value is <= 1, treat as fractions
-    const pctNums = data.map((r) => get(r, 'pct')).filter((v) => typeof v === 'number');
-    const pctFraction = pctNums.length > 0 && pctNums.every((v) => v <= 1) && !data.some((r) => /%/.test(String(get(r, 'pct'))));
+    const pctNums = data.map(({ r }) => get(r, 'pct')).filter((v) => typeof v === 'number');
+    const pctFraction = pctNums.length > 0 && pctNums.every((v) => v <= 1) && !data.some(({ r }) => /%/.test(String(get(r, 'pct'))));
 
-    const tasks = data.map((r, i) => {
+    // Outline codes. Numbers typed into Excel lose trailing zeros (1.10 becomes 1.1), so a repeat gets its zero back.
+    const codesOf = (k) => {
+      const seen = new Set();
+      return data.map(({ r }) => {
+        const v = get(r, k);
+        let c = (typeof v === 'number' ? String(v) : str(v)).replace(/\.$/, '');
+        if (typeof v === 'number') while (c.includes('.') && seen.has(c)) c += '0';
+        if (c) seen.add(c);
+        return c;
+      });
+    };
+    const wbsCodes = has('wbs') ? codesOf('wbs') : data.map(() => '');
+    const idCodes = has('id') ? codesOf('id') : data.map(() => '');
+    const filled = (codes) => codes.filter(Boolean);
+    const unique = (codes) => new Set(filled(codes)).size === filled(codes).length;
+    const depth = (c) => c.split('.').length - 1;
+
+    // hierarchy: outline level column, WBS codes, outline-style IDs (A, A.1), Excel indentation, leading spaces, then heading rows
+    let levels = null, how = '', groupByWbs = false;
+    if (has('level') && data.some(({ r }) => num(get(r, 'level')) != null)) { levels = data.map(({ r }) => num(get(r, 'level')) || 0); how = 'level'; }
+    else if (filled(wbsCodes).length) {
+      if (!unique(wbsCodes) && filled(wbsCodes).length > 2) { groupByWbs = true; levels = data.map(() => 0); how = 'wbs-group'; }
+      else { let prev = 0; levels = wbsCodes.map((c) => (prev = c ? depth(c) : prev)); how = 'wbs'; }
+    } else if (filled(idCodes).length > 1 && unique(idCodes) && filled(idCodes).some((c) => c.includes('.'))) {
+      let prev = 0; levels = idCodes.map((c) => (prev = c ? depth(c) : prev)); how = 'id';
+    }
+    if (!levels) {
+      const nc = map.name;
+      levels = data.map(({ r, f }) => {
+        const lead = String(get(r, 'name')).match(/^(\s*)/)[1].replace(/\t/g, '    ').length;
+        return ((f[nc] && f[nc].indent) || 0) + Math.floor(lead / 2);
+      });
+      if (levels.some((l) => l !== levels[0])) how = 'indent';
+    }
+    if (!how) {
+      // no outline information: rows without any dates, durations or hours that sit above detailed rows are headings
+      const nc = map.name;
+      const blank = ({ r }) => ['duration', 'start', 'finish', 'manhours', 'preds', 'crew'].every((k) => str(get(r, k)) === '');
+      const boldRows = data.map(({ f }) => !!(f[nc] && f[nc].bold));
+      const someBold = boldRows.some(Boolean) && !boldRows.every(Boolean);
+      const heading = data.map((d, i) => (blank(d) || (someBold && boldRows[i])) && i < data.length - 1);
+      if (heading.some(Boolean) && heading.some((h) => !h)) { levels = heading.map((h) => (h ? 0 : 1)); how = 'headings'; }
+    }
+
+    let tasks = data.map(({ r }, i) => {
       const rawName = String(get(r, 'name'));
-      const t = { id: i + 1, name: rawName.trim(), preds: [] };
-      // hierarchy
-      if (map.level != null && map.level !== '' && num(get(r, 'level')) != null) t.level = num(get(r, 'level'));
-      else if (map.wbs != null && map.wbs !== '' && String(get(r, 'wbs')).trim()) t.level = String(get(r, 'wbs')).trim().replace(/\.$/, '').split('.').length - 1;
-      else { const lead = rawName.match(/^(\s*)/)[1].replace(/\t/g, '    ').length; t.level = Math.floor(lead / 2); }
-      t._wbsIn = String(get(r, 'wbs')).trim();
-      t._idIn = String(get(r, 'id')).trim();
-      const dur = U.parseDuration(get(r, 'duration'), hpd, dpw);
-      const st = U.parseAnyDate(get(r, 'start'), opts.dateOrder);
-      const fi = U.parseAnyDate(get(r, 'finish'), opts.dateOrder);
-      t._start = st; t._finish = fi;
-      t.duration = dur;
+      const t = { id: i + 1, name: rawName.trim(), level: levels[i], preds: [] };
+      t._wbsIn = wbsCodes[i] || (how === 'id' ? idCodes[i] : '');
+      t._idIn = idCodes[i];
+      t.duration = U.parseDuration(get(r, 'duration'), hpd, dpw);
+      const rs = get(r, 'start'), rf = get(r, 'finish');
+      t._start = U.parseAnyDate(rs, opts.dateOrder);
+      t._finish = U.parseAnyDate(rf, opts.dateOrder);
+      // Primavera exports flag actual dates with a trailing "A"
+      const as = U.parseAnyDate(get(r, 'actualStart'), opts.dateOrder) || (/\sA$/.test(str(rs)) ? t._start : null);
+      const af = U.parseAnyDate(get(r, 'actualFinish'), opts.dateOrder) || (/\sA$/.test(str(rf)) ? t._finish : null);
+      if (as) t.actualStart = as;
+      if (af) { t.actualFinish = af; if (!t.actualStart) t.actualStart = t._start || af; }
       const mh = num(get(r, 'manhours'));
       if (mh != null) t.manhours = mh;
       const crew = num(get(r, 'crew'));
       if (crew != null) t.crew = crew;
-      const res = String(get(r, 'resource') || '').trim();
+      const unit = str(get(r, 'unit'));
+      if (unit) t.unit = unit;
+      const qty = num(get(r, 'qty'));
+      if (qty != null && qty > 0) t.qty = qty;
+      const done = num(get(r, 'qtyDone'));
+      if (done != null && done > 0) t._qtyDone = done;
+      const res = str(get(r, 'resource'));
       if (res) t.resource = res;
       let pct = num(get(r, 'pct'));
       if (pct != null) { if (pctFraction) pct *= 100; t.pct = U.clamp(Math.round(pct), 0, 100); }
-      const notes = String(get(r, 'notes') || '').trim();
+      if (af && t.pct == null) t.pct = 100;
+      const notes = str(get(r, 'notes'));
       if (notes) t.notes = notes;
       t._predText = String(get(r, 'preds') == null ? '' : get(r, 'preds'));
       return t;
     });
-    if (!tasks.length) return { tasks: [], warnings: ['No rows with a task name were found.'] };
+    const rowTasks = tasks.slice();
 
-    // normalise levels so the smallest is 0
+    // normalise levels so the smallest is 0 and no row jumps more than one level below the row above
     const minLevel = Math.min(...tasks.map((t) => t.level));
-    tasks.forEach((t) => { t.level -= minLevel; });
+    tasks.forEach((t, i) => { t.level -= minLevel; const prev = i ? tasks[i - 1].level : -1; if (t.level > prev + 1) t.level = prev + 1; });
+
+    // Primavera-style layouts repeat the WBS code on every activity: build a summary row for each WBS branch
+    if (groupByWbs) {
+      const segs = wbsCodes.map((c) => (c ? c.split('.') : []));
+      const nz = segs.filter((p) => p.length);
+      let common = 0;
+      while (nz.length && nz.every((p) => p.length > common + 1 && p[common] === nz[0][common])) common++;
+      const out = [];
+      let open = [];
+      tasks.forEach((t, i) => {
+        const path = segs[i].slice(common);
+        let k = 0;
+        while (k < open.length && k < path.length && open[k] === path[k]) k++;
+        open = open.slice(0, k);
+        for (; k < path.length; k++) { open.push(path[k]); out.push({ name: segs[i].slice(0, common + k + 1).join('.'), level: k, preds: [] }); }
+        t.level = path.length;
+        out.push(t);
+      });
+      tasks = out;
+      tasks.forEach((t, i) => { t.id = i + 1; });
+    }
 
     // predecessor resolution: by imported ID, then WBS code, then row number
     const byIdIn = new Map(), byWbs = new Map();
-    tasks.forEach((t) => { if (t._idIn) byIdIn.set(t._idIn, t); if (t._wbsIn) byWbs.set(t._wbsIn, t); });
-    const useIds = map.id != null && map.id !== '' && byIdIn.size > 0;
+    rowTasks.forEach((t) => { if (t._idIn) byIdIn.set(t._idIn, t); if (t._wbsIn) byWbs.set(t._wbsIn, t); });
+    const useIds = has('id') && byIdIn.size > 0;
+    const plainRefs = (tok) => {
+      const parts = tok.split(/\s+/);
+      return parts.length > 1 && parts.every((p) => /^[\w.]+$/.test(p) && !/^(fs|ss|ff|sf)$/i.test(p) && !/^\d+(\.\d+)?[a-z]+$/i.test(p)) ? parts : [tok];
+    };
     let badCount = 0;
-    tasks.forEach((t) => {
-      t._predText.split(/[,;]+/).map((s) => s.trim()).filter(Boolean).forEach((tok) => {
+    rowTasks.forEach((t) => {
+      t._predText.split(/[,;]+/).map((s) => s.trim()).filter(Boolean).flatMap(plainRefs).forEach((tok) => {
         const m = tok.match(/^([\w.]+?)\s*(FS|SS|FF|SF)?\s*(?:([+-])\s*(\d+(?:\.\d+)?)\s*([a-z]*))?$/i);
         if (!m) { badCount++; return; }
         const ref = m[1];
         let q = useIds ? byIdIn.get(ref) : null;
-        if (!q && byWbs.has(ref) && ref.includes('.')) q = byWbs.get(ref);
-        if (!q && /^\d+$/.test(ref)) q = useIds ? byIdIn.get(ref) : tasks[+ref - 1];
+        if (!q && byWbs.has(ref) && !/^\d+$/.test(ref)) q = byWbs.get(ref); // a bare number is a row number, not WBS "2"
+        if (!q && /^\d+$/.test(ref) && !useIds) q = rowTasks[+ref - 1];
         if (!q || q === t) { badCount++; return; }
         let lag = m[4] ? U.parseDuration(m[4] + (m[5] || 'd'), hpd, dpw) : 0;
         if (m[3] === '-') lag = -lag;
@@ -158,6 +297,28 @@ PS.importers = (function () {
     const starts = tasks.map((t) => t._start).filter(Boolean).sort();
     const startDate = starts[0] || null;
     const anyPreds = tasks.some((t) => t.preds.length);
+    // Status date: the latest date the sheet's progress vouches for (actual dates, finished rows, started rows).
+    // With no progress recorded, the plan is shown as written rather than moving unstarted work to today.
+    const dated = [];
+    tasks.forEach((t) => { if (t._start) dated.push(t._start); if (t._finish && t._finish !== t._start) dated.push(t._finish); });
+    tasks.forEach((t) => { if (t._qtyDone && t.qty > 0) t.pct = U.round(U.clamp(100 * t._qtyDone / t.qty, 0, 100), 2); });
+    let progressDate = '';
+    tasks.forEach((t) => {
+      [t.actualStart, t.actualFinish, t.pct >= 100 ? t._finish : '', t.pct > 0 ? t._start : ''].forEach((d) => { if (d && d > progressDate) progressDate = d; });
+    });
+    const anyProgress = tasks.some((t) => t.pct > 0 || t.actualStart || t._qtyDone);
+    const today = U.todayISO();
+    const statusDate = anyProgress ? (progressDate && progressDate < today ? progressDate : null) : (startDate && startDate < today ? startDate : null);
+    // quantity done so far becomes one progress entry on the status date
+    tasks.forEach((t) => {
+      if (t._qtyDone) {
+        const d = statusDate || today;
+        t.progressLog = [{ date: d, qty: t._qtyDone }];
+        if (!t.actualStart) t.actualStart = d < (t._start || d) ? d : (t._start || d);
+        if (t.qty > 0) { t.pct = U.round(U.clamp(100 * t._qtyDone / t.qty, 0, 100), 2); if (t._qtyDone >= t.qty && !t.actualFinish) t.actualFinish = d; }
+      }
+      delete t._qtyDone;
+    });
     tasks.forEach((t) => {
       if (t.duration == null && t._start && t._finish && opts.calendar) {
         const c = U.Calendar(startDate || t._start, opts.calendar);
@@ -165,10 +326,30 @@ PS.importers = (function () {
       }
       if (t.duration == null) t.duration = t.manhours && t.crew ? null : 1;
       if (t.duration == null) t.effortDriven = true;
-      if (t._start && (opts.lockDates || !anyPreds)) t.constraintDate = t._start;
+      if (t._start && !t.actualStart && (opts.lockDates || !anyPreds)) t.constraintDate = t._start;
       delete t._start; delete t._finish; delete t._predText; delete t._wbsIn; delete t._idIn;
     });
-    return { tasks, startDate, warnings };
+    // Working week: weekend dates in the sheet mean the team works those days.
+    const dows = [0, 0, 0, 0, 0, 0, 0];
+    dated.forEach((d) => { dows[U.parseISO(d).getUTCDay()]++; });
+    const total = dated.length;
+    const workDays = [1, 2, 3, 4, 5].concat(dows[6] >= Math.max(2, total * 0.04) ? [6] : [], dows[0] >= Math.max(2, total * 0.04) ? [0] : []).sort();
+    return { tasks, startDate, statusDate, workDays: total >= 4 ? workDays : null, hierarchy: how, warnings };
+  }
+
+  /* Day/month order from text dates: a first number above 12 means DMY, a second above 12 means MDY. */
+  function guessDateOrder(rows, map) {
+    let dmy = 0, mdy = 0;
+    ['start', 'finish', 'actualStart', 'actualFinish'].forEach((k) => {
+      if (map[k] == null || map[k] === '') return;
+      rows.forEach((r) => {
+        const m = String((r && r[map[k]]) == null ? '' : r[map[k]]).match(/^\D*?(\d{1,2})[-/.](\d{1,2})[-/.]\d{2,4}/);
+        if (!m) return;
+        if (+m[1] > 12) dmy++;
+        if (+m[2] > 12) mdy++;
+      });
+    });
+    return dmy > mdy ? 'DMY' : mdy > dmy ? 'MDY' : null;
   }
 
   // ---------- MS Project XML (MSPDI)
@@ -220,6 +401,7 @@ PS.importers = (function () {
       if (as) t.actualStart = as.slice(0, 10);
       if (af) t.actualFinish = af.slice(0, 10);
       t._start = childTxt(el, 'Start').slice(0, 10);
+      t._summary = childTxt(el, 'Summary') === '1';
       const ct = childTxt(el, 'ConstraintType'), cd = childTxt(el, 'ConstraintDate');
       if ((ct === '4' || ct === '2') && cd) t.constraintDate = cd.slice(0, 10);
       const notes = childTxt(el, 'Notes');
@@ -235,8 +417,8 @@ PS.importers = (function () {
     if (!tasks.length) throw new Error('No tasks were found in this MS Project file.');
     tasks.forEach((t) => {
       t.preds = t._links.filter((l) => uidMap.has(l.uid)).map((l) => ({ id: uidMap.get(l.uid).id, type: l.type, lag: Math.round(l.lag * 2) / 2 }));
-      if (!t.preds.length && !t.constraintDate && !t.actualStart && t._start) t.constraintDate = t._start;
-      delete t._links;
+      if (!t.preds.length && !t.constraintDate && !t.actualStart && !t._summary && t._start) t.constraintDate = t._start;
+      delete t._links; delete t._summary;
     });
     const starts = tasks.map((t) => t._start).filter(Boolean).sort();
     tasks.forEach((t) => delete t._start);
@@ -245,12 +427,38 @@ PS.importers = (function () {
     tasks.forEach((t) => { if (t.constraintDate && t.constraintDate <= projStart) delete t.constraintDate; });
     const mpw = parseFloat(childTxt(root, 'MinutesPerWeek')) || mpd * 5;
     const dpw = Math.round(mpw / mpd);
-    const wd = dpw >= 7 ? [0, 1, 2, 3, 4, 5, 6] : dpw === 6 ? [1, 2, 3, 4, 5, 6] : [];
+    let wd = dpw >= 7 ? [0, 1, 2, 3, 4, 5, 6] : dpw === 6 ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5];
+    // project calendar: working weekdays and non-working exception days (holidays)
+    const holidays = [];
+    const calUID = childTxt(root, 'CalendarUID') || '1';
+    const calEl = [...root.getElementsByTagName('Calendar')].find((c) => childTxt(c, 'UID') === calUID);
+    if (calEl) {
+      const addRange = (tp, working) => {
+        if (working) return;
+        const from = U.parseISO(txt(tp, 'FromDate').slice(0, 10)), to = U.parseISO(txt(tp, 'ToDate').slice(0, 10));
+        if (!from || !to) return;
+        for (let d = from, n = 0; d <= to && n < 400; d = new Date(d.getTime() + 864e5), n++) holidays.push(U.toISO(d));
+      };
+      const weekDays = [...calEl.getElementsByTagName('WeekDay')].filter((w) => w.parentNode.parentNode === calEl);
+      const set = new Set(wd);
+      weekDays.forEach((w) => {
+        const type = +childTxt(w, 'DayType'), working = childTxt(w, 'DayWorking') === '1';
+        if (type >= 1 && type <= 7) { if (working) set.add(type - 1); else set.delete(type - 1); }
+        else if (type === 0) [...w.getElementsByTagName('TimePeriod')].forEach((tp) => addRange(tp, working));
+      });
+      if (set.size) wd = [...set].sort();
+      [...calEl.getElementsByTagName('Exception')].forEach((ex) => {
+        const tp = ex.getElementsByTagName('TimePeriod')[0];
+        if (tp) addRange(tp, childTxt(ex, 'DayWorking') === '1');
+      });
+    }
     const name = childTxt(root, 'Title') || childTxt(root, 'Name') || 'Imported MS Project schedule';
+    const statusDate = childTxt(root, 'StatusDate').slice(0, 10);
     return {
       name: name.replace(/\.xml$/i, ''),
       startDate: projStart,
-      calendar: { workDays: wd.length ? wd : [1, 2, 3, 4, 5], hoursPerDay: hpd, holidays: [] },
+      statusDate: statusDate && statusDate > '1984' ? statusDate : undefined,
+      calendar: { workDays: wd, hoursPerDay: hpd, holidays: [...new Set(holidays)].sort() },
       tasks,
     };
   }
@@ -364,6 +572,7 @@ PS.importers = (function () {
 
   function parseBackup(text) {
     const p = JSON.parse(text);
+    if (p && p.planline === 'bundle' && Array.isArray(p.projects)) return p;
     if (!p || !Array.isArray(p.tasks)) throw new Error('This file is not a Planline project backup.');
     return p;
   }
@@ -375,5 +584,5 @@ PS.importers = (function () {
     return { kind: 'table', sheets: { Pasted: rows }, sheetNames: ['Pasted'] };
   }
 
-  return { FIELDS, readFile, readPasted, detectHeader, autoMap, buildTasks, parseMSPDI, parseXER, parseBackup };
+  return { FIELDS, readFile, readPasted, detectHeader, autoMap, guessDateOrder, buildTasks, parseMSPDI, parseXER, parseBackup };
 })();

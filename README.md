@@ -4,7 +4,16 @@ A free, server-free project scheduler that runs entirely in the browser.
 
 - **WBS** with unlimited sub-activities (indent / outdent), summary roll-ups and WBS codes
 - **Import** from any Excel/CSV layout (columns matched by name, adjustable), rows pasted from a spreadsheet, MS Project / ProjectLibre XML, Primavera P6 .xer, or a Planline backup
+  - The task hierarchy comes from an outline-level column, WBS codes, outline-style IDs (A, A.1), Excel cell indentation, or heading rows with no dates
+  - Primavera layout exports work too: repeated WBS codes become summary rows and dates flagged "A" become actual dates
+  - The status date and working week are inferred from the sheet's progress and dates; MS Project XML brings its status date and holidays
 - **Man-hours** typed in, or calculated from an editable library of indicative industry norms (quantity × MH/unit × productivity factor); duration can be derived from man-hours ÷ (crew × hours/day)
+- **Quantities**: each activity can carry a unit of measure, scope quantity and quantity done; % complete is then measured as quantity done ÷ scope
+- **Weightage**: each activity's weight is its share of total man-hours, and overall progress is the weighted sum
+- **Progress entry sheet**: record quantities day by day, week by week or month by month, with weighted period, cumulative actual and cumulative planned progress
+- **Norms**: a library of about 400 indicative norms across oil & gas EPCM (piping, structural, mechanical, E&I, pipelines, insulation and more), engineering, buildings, power and renewables; or give any activity its own norm
+- **Multiple projects**: create, rename, duplicate, open, back up, restore, report and delete projects from one Projects screen
+- **Schedule lock**: lock a schedule so planning fields cannot be edited until it is unlocked; progress can still be recorded
 - **Scheduling logic**: FS / SS / FF / SF links with lead/lag, critical path, total float, working calendar with holidays, "start no earlier than" dates, status-date rescheduling, baseline
 - **Gantt chart** with dependency arrows, critical path, progress, baseline bars and day / week / month zoom
 - **Dashboard**: KPI tiles, S-curve (planned, baseline, actual), status mix, phase progress, man-hour histogram, a chart builder with PNG export, and a "needs attention" list
@@ -41,6 +50,7 @@ Cloudflare Pages or Netlify work the same way (no build command, output director
 | `js/importers.js`, `js/exporters.js` | File import and export |
 | `js/norms.js` | Built-in man-hour norms (indicative values) |
 | `js/gantt.js`, `js/dashboard.js`, `js/analytics.js` | Gantt chart, dashboard, progress maths |
-| `js/app.js` | Editing, views and dialogs |
+| `js/progress.js` | Day / week / month progress entry sheet |
+| `js/app.js` | Editing, views, project manager and dialogs |
 | `js/report.js` | Formatted Excel report with dashboard and Gantt |
 | `vendor/` | SheetJS (Apache-2.0), ExcelJS (MIT) and Chart.js (MIT) |

@@ -41,7 +41,8 @@ PS.dashboard = (function () {
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.boxPadding = 4;
     Chart.defaults.maintainAspectRatio = false;
-    Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400;
+    Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900;
+    Chart.defaults.animation.easing = 'easeOutQuart';
     return true;
   }
 

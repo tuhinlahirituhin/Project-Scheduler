@@ -49,7 +49,7 @@ PS.makeSampleProject = function () {
       t.crew = r[7];
       t.resource = r[8];
       t.pct = r[9];
-      if (n) { t.normId = n.id; t.qty = r[5]; t.manhours = U.round(n.mh * r[5], 2); }
+      if (n) { t.normId = n.id; t.unit = n.unit; t.qty = r[5]; t.manhours = U.round(n.mh * r[5], 2); }
       else t.manhours = r[6];
       t.effortDriven = t.manhours > 0 && t.crew > 0 && !r[2];
     }
@@ -90,6 +90,21 @@ PS.makeSampleProject = function () {
     t.baselineFinish = t._dur > 0 ? r.cal.dateOf(t.ef - 1 + shift) : r.cal.dateOf(t.es + shift);
     t.baselineDuration = t._dur;
     t.baselineManhours = t._mh;
+  });
+  // Weekly quantity records for measured activities, adding up to their % complete
+  tasks.forEach((t) => {
+    if (t._summary || !(t.qty > 0) || !(t.pct > 0)) return;
+    const end = t.pct >= 100 && t.finish < today ? t.finish : today;
+    const dates = [];
+    for (let iso = U.addDaysISO(t.start, 6); iso < end; iso = U.addDaysISO(iso, 7)) dates.push(iso);
+    dates.push(end);
+    const total = U.round(t.qty * t.pct / 100, 2);
+    let left = total;
+    t.progressLog = dates.map((date, i) => {
+      const qty = i === dates.length - 1 ? U.round(left, 2) : U.round(total / dates.length, 2);
+      left -= qty;
+      return { date, qty };
+    });
   });
   r = PS.schedule.compute(project);
 

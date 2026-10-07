@@ -59,11 +59,14 @@ window.PS = window.PS || {};
     p.tasks.forEach((t) => { if (ids.has(t.id)) t.id = Math.max(...ids) + 1; ids.add(t.id); });
     p.productivityFactor = Number(p.productivityFactor) || 1;
     p.history = p.history || [];
+    const lib = new Map(getNorms().map((n) => [n.id, n]));
+    p.tasks.forEach((t) => { if (t.normId && !t.unit && lib.has(t.normId)) t.unit = lib.get(t.normId).unit; });
     if (!p.statusDate) p.statusDate = U.todayISO();
     if (!p.startDate) p.startDate = U.todayISO();
     return p;
   }
   function openProject(p) {
+    app.animate = true;
     app.project = normalise(p);
     app.undo = []; app.redo = []; app.selected = new Set(); app.anchor = null;
     recompute();
@@ -72,8 +75,28 @@ window.PS = window.PS || {};
     requestAnimationFrame(() => PS.gantt.scrollTo($('#gantt-pane'), app.res.statusISO));
   }
 
-  function getNorms() { return U.store.get('ps.norms', null) || PS.DEFAULT_NORMS.map((n) => Object.assign({}, n)); }
+  // The saved library holds the user's edits; built-in norms added in later versions still appear
+  // unless the user deleted them.
+  function getNorms() {
+    const defs = PS.DEFAULT_NORMS;
+    const saved = U.store.get('ps.norms', null);
+    if (!saved) return defs.map((n) => Object.assign({}, n));
+    const deleted = new Set(U.store.get('ps.norms.deleted', []));
+    const have = new Set(saved.map((n) => n.id));
+    const def = new Map(defs.map((n) => [n.id, n]));
+    saved.forEach((n) => { if (!n.sector) n.sector = def.has(n.id) ? def.get(n.id).sector : 'My norms'; });
+    return saved.concat(defs.filter((n) => !have.has(n.id) && !deleted.has(n.id)).map((n) => Object.assign({}, n)));
+  }
   function setNorms(list) { U.store.set('ps.norms', list); }
+  function normLabel(n) { return `${n.name} · ${n.mh} MH/${n.unit}`; }
+
+  // ---------------------------------------------------------------- schedule lock
+  const isLocked = () => !!app.project.locked;
+  function guard() {
+    if (!isLocked()) return false;
+    toast('The schedule is locked. Unlock it to change the plan.');
+    return true;
+  }
 
   // ---------------------------------------------------------------- editing core
   function recompute() { app.res = S.compute(app.project); }
@@ -125,18 +148,64 @@ window.PS = window.PS || {};
     if (v < 100) delete t.actualFinish;
   }
 
+  /* Man-hours from a norm: scope quantity × MH per unit × project factor × activity factor.
+     The rate comes from the library (normId) or from a custom rate entered for this activity (rate). */
+  function normRate(t) {
+    if (t.normId) { const n = getNorms().find((x) => x.id === t.normId); return n ? n.mh : null; }
+    if (t.rate != null && t.rate !== '' && !isNaN(t.rate)) return Number(t.rate);
+    return null;
+  }
   function applyNorm(t) {
-    const n = getNorms().find((x) => x.id === t.normId);
-    if (!n) return;
-    t.manhours = U.round((Number(t.qty) || 0) * n.mh * (Number(app.project.productivityFactor) || 1), 2);
+    const rate = normRate(t);
+    if (rate == null) return;
+    t.manhours = U.round((Number(t.qty) || 0) * rate * (Number(app.project.productivityFactor) || 1) * (Number(t.apf) || 1), 2);
     if (t.crew > 0) t.effortDriven = true;
   }
+
+  /* Quantity progress log: [{ date, qty }]. Actual dates and % complete follow from it. */
+  function syncLog(t) {
+    const log = (t.progressLog || []).filter((e) => e && e.date && Number(e.qty)).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    if (!log.length) { delete t.progressLog; t.pct = 0; delete t.actualStart; delete t.actualFinish; return; }
+    t.progressLog = log;
+    const scope = Number(t.qty) || 0;
+    let cum = 0, fin = null;
+    log.forEach((e) => { cum += Number(e.qty); if (scope > 0 && !fin && cum >= scope - 1e-9) fin = e.date; });
+    t.actualStart = log[0].date;
+    if (fin) t.actualFinish = fin; else delete t.actualFinish;
+    if (scope > 0) t.pct = U.round(U.clamp(100 * cum / scope, 0, 100), 2);
+  }
+  /* Replace the quantity recorded between from..to (inclusive) with one entry on `date`. */
+  function setPeriodQty(t, from, to, date, qty) {
+    t.progressLog = (t.progressLog || []).filter((e) => e.date < from || e.date > to);
+    if (Number(qty)) t.progressLog.push({ date, qty: Number(qty) });
+    syncLog(t);
+    if (Number(qty) && date > app.project.statusDate) { app.project.statusDate = date; toast('Status date moved to ' + U.fmtDate(date) + ' to include this progress.'); }
+  }
+  const qtyDriven = (t) => Number(t.qty) > 0 && (t.progressLog || []).length > 0;
+  const PLAN_FIELDS = new Set(['name', 'duration', 'start', 'finish', 'preds', 'manhours', 'crew', 'resource', 'unit', 'qty']);
 
   function commitCell(id, f, raw) {
     const t = byId(id);
     if (!t) return;
     const err = (m) => { toast(m); renderGrid(); };
+    if (PLAN_FIELDS.has(f) && guard()) return renderGrid();
     switch (f) {
+      case 'unit': mutate(() => { t.unit = raw.trim(); }); break;
+      case 'qty': {
+        const v = raw === '' ? 0 : Number(String(raw).replace(/,/g, ''));
+        if (isNaN(v) || v < 0) return err('Scope quantity must be a number');
+        mutate(() => { if (v) t.qty = v; else delete t.qty; applyNorm(t); if (t.progressLog) syncLog(t); });
+        break;
+      }
+      case 'done': {
+        const v = raw === '' ? 0 : Number(String(raw).replace(/,/g, ''));
+        if (isNaN(v) || v < 0) return err('Done quantity must be a number');
+        if (!(Number(t.qty) > 0)) return err('Enter the scope quantity first');
+        const status = app.project.statusDate;
+        const before = (t.progressLog || []).filter((e) => e.date !== status).reduce((a, e) => a + Number(e.qty), 0);
+        mutate(() => setPeriodQty(t, status, status, status, v - before));
+        break;
+      }
       case 'name': mutate(() => { t.name = raw.trim(); }); break;
       case 'duration': {
         const v = U.parseDuration(raw, hpd(), dpw());
@@ -169,7 +238,7 @@ window.PS = window.PS || {};
       case 'manhours': {
         const v = raw === '' ? 0 : Number(String(raw).replace(/,/g, ''));
         if (isNaN(v) || v < 0) return err('Man-hours must be a number');
-        mutate(() => { t.manhours = v; delete t.normId; delete t.qty; });
+        mutate(() => { t.manhours = v; delete t.normId; delete t.rate; });
         break;
       }
       case 'crew': {
@@ -180,6 +249,7 @@ window.PS = window.PS || {};
       }
       case 'resource': mutate(() => { t.resource = raw.trim(); }); break;
       case 'pct': {
+        if (qtyDriven(t)) return err('Progress for this activity comes from recorded quantities. Use the Progress entry tab.');
         const v = Number(String(raw).replace('%', ''));
         if (isNaN(v)) return err('% complete must be a number from 0 to 100');
         mutate(() => setPct(t, v));
@@ -190,6 +260,7 @@ window.PS = window.PS || {};
   }
 
   function addTask(milestone) {
+    if (guard()) return;
     const T = tasks();
     const sel = selectedInOrder();
     let at = T.length, level = 0;
@@ -204,6 +275,7 @@ window.PS = window.PS || {};
   }
 
   function shiftLevel(delta) {
+    if (guard()) return;
     const T = tasks();
     const sel = selectedInOrder();
     if (!sel.length) return toast('Select a task first');
@@ -223,6 +295,7 @@ window.PS = window.PS || {};
   }
 
   function move(dir) {
+    if (guard()) return;
     const T = tasks();
     const sel = selectedInOrder();
     if (!sel.length) return toast('Select a task first');
@@ -242,19 +315,26 @@ window.PS = window.PS || {};
     }
   }
 
-  function linkSelected() {
-    const sel = selectedInOrder().filter((t) => !t._summary || true);
+  const LINK_NAMES = { FS: 'finish-to-start', SS: 'start-to-start', FF: 'finish-to-finish', SF: 'start-to-finish' };
+  function linkSelected(type, lag) {
+    if (guard()) return;
+    type = type || 'FS'; lag = Number(lag) || 0;
+    const sel = selectedInOrder();
     if (sel.length < 2) return toast('Select two or more tasks (Ctrl/Shift + click row numbers), then Link');
+    let n = 0;
     mutate(() => {
       for (let i = 1; i < sel.length; i++) {
         const a = sel[i - 1], b = sel[i];
         if (b._ancestors.includes(a.id) || a._ancestors.includes(b.id)) continue;
-        if (!b.preds.some((p) => p.id === a.id)) b.preds.push({ id: a.id, type: 'FS', lag: 0 });
+        const ex = b.preds.find((p) => p.id === a.id);
+        if (ex) { ex.type = type; ex.lag = lag; } else b.preds.push({ id: a.id, type, lag });
+        n++;
       }
     });
-    toast('Linked finish-to-start in row order');
+    toast(`Linked ${n} pair${n === 1 ? '' : 's'} ${LINK_NAMES[type]}${lag ? (lag > 0 ? ' + ' : ' ') + lag + ' d' : ''}`);
   }
   function unlinkSelected() {
+    if (guard()) return;
     const sel = selectedInOrder();
     if (!sel.length) return toast('Select a task first');
     mutate(() => {
@@ -263,6 +343,7 @@ window.PS = window.PS || {};
     });
   }
   function deleteSelected() {
+    if (guard()) return;
     const T = tasks();
     const sel = selectedInOrder();
     if (!sel.length) return toast('Select a task first');
@@ -282,8 +363,16 @@ window.PS = window.PS || {};
     renderErrors();
     if (ui.view === 'schedule') { renderGrid(); renderGantt(); renderDetails(); }
     if (ui.view === 'dashboard') PS.dashboard.render($('#dash'), app.project, app.res);
+    if (ui.view === 'progress') PS.progress.render($('#progress'), progressCtx);
     if (ui.view === 'norms') renderNorms();
     if (ui.view === 'settings') renderSettings();
+    const lk = isLocked();
+    document.body.classList.toggle('locked', lk);
+    $('#lockbar').hidden = !lk || ui.view !== 'schedule';
+    const lb = $('#tb-lock');
+    lb.setAttribute('aria-pressed', lk ? 'true' : 'false');
+    lb.title = lk ? 'Unlock the schedule' : 'Lock the schedule so it cannot be changed';
+    lb.querySelector('use').setAttribute('href', lk ? '#i-lock' : '#i-unlock');
     $('#tb-undo').disabled = !app.undo.length;
     $('#tb-redo').disabled = !app.redo.length;
   }
@@ -324,6 +413,10 @@ window.PS = window.PS || {};
     { k: 'finish', label: 'Finish', w: 132 },
     { k: 'preds', label: 'Predecessors', w: 120 },
     { k: 'manhours', label: 'Man-hours', w: 112 },
+    { k: 'unit', label: 'Unit', w: 66 },
+    { k: 'qty', label: 'Scope qty', w: 86 },
+    { k: 'done', label: 'Done qty', w: 86 },
+    { k: 'wt', label: 'Weight %', w: 72 },
     { k: 'crew', label: 'Crew', w: 56 },
     { k: 'resource', label: 'Resource', w: 130 },
     { k: 'pct', label: '% done', w: 66 },
@@ -339,28 +432,36 @@ window.PS = window.PS || {};
     const head = `<thead><tr>${COLS.map((c) => `<th style="width:${c.w}px;min-width:${c.w}px"${c.k === 'row' ? ' class="c-row"' : ''}>${c.label}</th>`).join('')}</tr></thead>`;
     const body = rows.map((t) => {
       const sum = t._summary;
-      const ro = sum ? ' readonly tabindex="-1"' : '';
+      const lk = isLocked();
+      const ro = sum || lk ? ' readonly tabindex="-1"' : '';
+      const roName = lk ? ' readonly' : '';
+      const roPct = sum || qtyDriven(t) ? ' readonly tabindex="-1"' : '';
       const cls = [sum ? 'summary' : '', app.selected.has(t.id) ? 'sel' : '', t._cycle ? 'cycle' : ''].join(' ');
       const caret = sum ? `<button type="button" class="caret${t.collapsed ? ' collapsed' : ''}" data-act="toggle" aria-label="${t.collapsed ? 'Expand' : 'Collapse'}"><svg><use href="#i-chev"/></svg></button>` : '<span class="caret-spacer"></span>';
-      const norm = t.normId ? `<span class="tag" title="From norms library">norm</span>` : '';
+      const norm = t.normId ? `<span class="tag" title="Man-hours from the norms library">norm</span>` : t.rate != null ? `<span class="tag custom" title="Man-hours from this activity's own norm">own</span>` : '';
       return `<tr data-id="${t.id}" class="${cls}">
         <td class="c-row">${t._row}</td>
         <td class="c-wbs">${t._wbs}</td>
-        <td><div class="namecell" style="padding-left:${t.level * 18}px">${caret}${t.milestone ? '<span class="ms-mark"></span>' : ''}<input class="cell" data-f="name" value="${U.esc(t.name)}" aria-label="Task name"></div></td>
+        <td><div class="namecell" style="padding-left:${t.level * 18}px">${caret}${t.milestone ? '<span class="ms-mark"></span>' : ''}<input class="cell" data-f="name" value="${U.esc(t.name)}"${roName} aria-label="Task name"></div></td>
         <td><input class="cell num" data-f="duration" value="${t._dur}"${ro || (t.effortDriven && !sum ? ' title="Calculated from man-hours ÷ (crew × hours per day). Type a value to override."' : '')} aria-label="Duration in working days"></td>
         <td><input class="cell" type="date" data-f="start" value="${t.start || ''}"${ro} aria-label="Start date" title="${t.actualStart ? 'Actual start' : t.constraintDate ? 'Start no earlier than ' + U.fmtDate(t.constraintDate) : 'Scheduled by links'}"></td>
         <td><input class="cell" type="date" data-f="finish" value="${t.finish || ''}"${ro} aria-label="Finish date"></td>
-        <td><input class="cell" data-f="preds" value="${U.esc(S.formatPreds(t, app.res.byId))}" aria-label="Predecessors" placeholder=""></td>
+        <td><input class="cell" data-f="preds" value="${U.esc(S.formatPreds(t, app.res.byId))}"${lk ? ' readonly' : ''} aria-label="Predecessors" placeholder=""></td>
         <td><div class="mhcell"><input class="cell num" data-f="manhours" value="${fmtN(sum ? t._mh : t.manhours)}"${ro} aria-label="Man-hours">${norm}</div></td>
+ <td><input class="cell" data-f="unit" list="unit-list" value="${U.esc(sum ? '' : t.unit || '')}"${ro} aria-label="Unit of measure"></td>
+        <td><input class="cell num" data-f="qty" value="${sum ? '' : fmtN(t.qty)}"${ro} aria-label="Scope quantity"></td>
+        <td><input class="cell num" data-f="done" value="${sum || !(t.qty > 0) ? '' : fmtN(t._qtyDone)}"${sum || !(t.qty > 0) ? ' readonly tabindex="-1"' : ''} aria-label="Quantity done to date" title="${t.qty > 0 ? 'Quantity installed to date. Typing here records the difference on the status date.' : 'Set a scope quantity to measure progress by quantity'}"></td>
+        <td class="num wt">${U.fmtNum(t._wt || 0, 2)}</td>
         <td><input class="cell num" data-f="crew" value="${sum ? '' : fmtN(t.crew)}"${ro} aria-label="Crew size"></td>
         <td><input class="cell" data-f="resource" list="res-list" value="${U.esc(sum ? '' : t.resource || '')}"${ro} aria-label="Resource"></td>
-        <td><input class="cell num" data-f="pct" value="${U.round(t.pct || 0, 1)}"${ro} aria-label="Percent complete"></td>
+        <td><div class="pctcell" style="--p:${U.clamp(t.pct || 0, 0, 100)}%"><input class="cell num" data-f="pct" value="${U.round(t.pct || 0, 1)}"${roPct} aria-label="Percent complete"${qtyDriven(t) ? ' title="Measured from quantities"' : ''}></div></td>
         <td class="float${t.critical ? ' crit' : ''}">${t.critical ? 'Crit' : t.tf}</td>
         <td><span class="status"><span class="dot ${t.status.replace(' ', '')}"></span>${t.status}</span></td>
       </tr>`;
     }).join('');
     grid.innerHTML = head + `<tbody>${body}<tr class="addrow"><td class="c-row"></td><td colspan="${COLS.length - 1}"><button type="button" data-act="add">+ Add task</button>${!tasks().length ? '<span class="muted small"> or use Import to bring in a spreadsheet or MS Project file</span>' : ''}</td></tr></tbody>`
-      + `<datalist id="res-list">${resources.map((r) => `<option value="${U.esc(r)}">`).join('')}</datalist>`;
+      + `<datalist id="res-list">${resources.map((r) => `<option value="${U.esc(r)}">`).join('')}</datalist>`
+      + `<datalist id="unit-list">${unitList().map((u) => `<option value="${U.esc(u)}">`).join('')}</datalist>`;
     if (app.focus) {
       const inp = grid.querySelector(`tr[data-id="${app.focus.id}"] input[data-f="${app.focus.f}"]`);
       if (inp) { inp.focus(); if (app.focus.select && inp.select) inp.select(); }
@@ -368,11 +469,17 @@ window.PS = window.PS || {};
     }
   }
 
+  function unitList() {
+    return [...new Set(['m', 'm²', 'm³', 'MT', 'kg', 'each', 'inch-dia', 'joint', 'km', 'nos', 'set', 'lot', 'loop', 'sheet', 'doc', 'LS']
+      .concat(tasks().map((t) => t.unit).filter(Boolean)))];
+  }
+
   function renderGantt() {
     PS.gantt.render($('#gantt-head'), $('#gantt-body'), app.project, app.res, visibleTasks(), {
-      zoom: ui.zoom, selected: app.selected,
+      zoom: ui.zoom, selected: app.selected, animate: app.animate,
       onSelect: (id, e) => selectRow(id, e),
     });
+    app.animate = false;
   }
 
   function selectRow(id, e) {
@@ -428,28 +535,75 @@ window.PS = window.PS || {};
         <button class="btn icon ghost" type="button" data-dact="unlink" data-li="${i}" aria-label="Remove link"><svg><use href="#i-trash"/></svg></button>
       </div>`).join('');
 
-    const effort = t._summary ? `<div class="calc">Rolled up from ${t._leaves.length} activities: <b>${U.fmtNum(t._mh, 0)}</b> man-hours, <b>${t._dur}</b> working days, <b>${U.round(t.pct, 1)}%</b> complete.</div>` : `
-      <fieldset><legend>Man-hours</legend>
-        <label class="field"><span>Industry norm (indicative)</span>
-          <select id="d-norm"><option value="">None, I'll enter man-hours</option>
-            ${cats.map((c) => `<optgroup label="${U.esc(c)}">${norms.filter((x) => x.cat === c).map((x) => `<option value="${x.id}"${x.id === t.normId ? ' selected' : ''}>${U.esc(x.name)} · ${x.mh} MH/${U.esc(x.unit)}</option>`).join('')}</optgroup>`).join('')}
-          </select></label>
-        ${n ? `<label class="field"><span>Quantity (${U.esc(n.unit)})</span><input type="number" id="d-qty" min="0" step="any" value="${t.qty || ''}"></label>
-          <div class="calc">${U.fmtNum(t.qty || 0, 2)} ${U.esc(n.unit)} × ${n.mh} MH/${U.esc(n.unit)}${pf !== 1 ? ' × ' + pf + ' productivity factor' : ''} = <b>${U.fmtNum(t.manhours || 0, 1)} MH</b></div>` : ''}
+    const lk = isLocked();
+    const dis = lk ? ' disabled' : '';
+    const basis = t.normId ? 'lib' : t.rate != null ? 'custom' : app.pickNormFor === t.id ? 'lib' : 'direct';
+    const rate = normRate(t);
+    const unit = t.unit || (n && n.unit) || 'unit';
+    const apf = Number(t.apf) || 1;
+    const effort = t._summary ? `<div class="calc">Rolled up from ${t._leaves.length} activities: <b>${U.fmtNum(t._mh, 0)}</b> man-hours (<b>${U.fmtNum(t._wt, 2)}%</b> of the project), <b>${t._dur}</b> working days, <b>${U.round(t.pct, 1)}%</b> complete.</div>` : `
+      <fieldset${dis}><legend>Quantity &amp; man-hours</legend>
         <div class="grid2">
-          <label class="field"><span>Man-hours</span><input type="number" id="d-mh" min="0" step="any" value="${t.manhours || ''}"></label>
+          <label class="field"><span>Unit of measure</span><input type="text" id="d-unit" list="unit-list" value="${U.esc(t.unit || (n ? n.unit : ''))}" placeholder="m, m³, MT, each…"></label>
+          <label class="field"><span>Scope quantity</span><input type="number" id="d-qty" min="0" step="any" value="${t.qty || ''}"></label>
+        </div>
+        <div class="field"><span>Man-hours from</span>
+          <div class="seg" role="radiogroup" aria-label="Man-hour basis">
+            <label><input type="radio" name="d-basis" value="direct"${basis === 'direct' ? ' checked' : ''}><span>Entered directly</span></label>
+            <label><input type="radio" name="d-basis" value="lib"${basis === 'lib' ? ' checked' : ''}><span>Library norm</span></label>
+            <label><input type="radio" name="d-basis" value="custom"${basis === 'custom' ? ' checked' : ''}><span>Own norm</span></label>
+          </div></div>
+        ${basis === 'lib' ? `<label class="field"><span>Library norm (type to search ${norms.length} norms)</span>
+          <input type="search" id="d-normsearch" list="norm-list" value="${n ? U.esc(normLabel(n)) : ''}" placeholder="e.g. butt weld, cable, rebar">
+          <datalist id="norm-list">${norms.map((x) => `<option value="${U.esc(normLabel(x))}">${U.esc(x.sector || '')} › ${U.esc(x.cat)}</option>`).join('')}</datalist></label>
+          ${n ? `<div class="small muted">${U.esc(n.sector || '')} › ${U.esc(n.cat)}</div>` : ''}` : ''}
+        ${basis === 'custom' ? `<div class="grid2" style="align-items:end">
+          <label class="field"><span>Own norm (MH per ${U.esc(unit)})</span><input type="number" id="d-rate" min="0" step="any" value="${t.rate ?? ''}"></label>
+          <button class="btn" type="button" data-dact="savenorm" title="Add this rate to the norms library for other activities">Save to library</button></div>` : ''}
+        ${basis !== 'direct' ? `<label class="field"><span>Activity productivity factor</span><input type="number" id="d-apf" min="0.1" max="5" step="0.05" value="${apf}"></label>
+          <div class="calc">${U.fmtNum(t.qty || 0, 2)} ${U.esc(unit)} × ${rate == null ? '?' : rate} MH/${U.esc(unit)}${pf !== 1 ? ' × ' + pf + ' project factor' : ''}${apf !== 1 ? ' × ' + apf + ' activity factor' : ''} = <b>${U.fmtNum(t.manhours || 0, 1)} MH</b></div>` : ''}
+        <div class="grid2">
+          <label class="field"><span>Man-hours</span><input type="number" id="d-mh" min="0" step="any" value="${t.manhours || ''}"${basis !== 'direct' ? ' title="Typing here switches to entered man-hours"' : ''}></label>
           <label class="field"><span>Crew size</span><input type="number" id="d-crew" min="0" step="1" value="${t.crew || ''}"></label>
         </div>
+        <div class="calc">Weightage: <b>${U.fmtNum(t._wt || 0, 2)}%</b> of the project${app.res.totalMH > 0 ? ` (${U.fmtNum(t._mh, 1)} of ${U.fmtNum(app.res.totalMH, 0)} MH)` : ' by duration, since no man-hours are entered'}</div>
         <label class="check"><input type="checkbox" id="d-effort"${t.effortDriven ? ' checked' : ''}> Calculate duration from man-hours</label>
         ${t.effortDriven ? `<div class="calc">${U.fmtNum(t.manhours || 0, 1)} MH ÷ (${t.crew || 0} crew × ${hpd()} h/day) = <b>${t._dur} working days</b></div>` : ''}
+      </fieldset>`;
+    const log = (t.progressLog || []).slice().reverse();
+    const scope = Number(t.qty) || 0;
+    const progress = t._summary ? '' : scope > 0 ? `<fieldset><legend>Progress by quantity</legend>
+        <div class="qtybar"><div style="width:${U.clamp(t.pct || 0, 0, 100)}%"></div></div>
+        <div class="calc"><b>${U.fmtNum(t._qtyDone || 0, 2)}</b> of ${U.fmtNum(scope, 2)} ${U.esc(t.unit || '')} done · <b>${U.round(t.pct || 0, 1)}%</b> · ${U.fmtNum(Math.max(0, scope - (t._qtyDone || 0)), 2)} remaining</div>
+        <div class="grid3" style="align-items:end">
+          <label class="field"><span>Date</span><input type="date" id="d-logdate" value="${app.project.statusDate}"></label>
+          <label class="field"><span>Quantity done</span><input type="number" id="d-logqty" step="any" placeholder="${U.esc(t.unit || '')}"></label>
+          <button class="btn primary" type="button" data-dact="logadd"><svg><use href="#i-plus"/></svg>Record</button>
+        </div>
+        ${log.length ? `<div class="loglist">${log.slice(0, 8).map((e) => `<div><span>${U.fmtDate(e.date)}</span><b class="num">${U.fmtNum(e.qty, 2)}</b><button class="btn icon ghost" type="button" data-dact="logdel" data-date="${e.date}" data-qty="${e.qty}" aria-label="Delete entry"><svg><use href="#i-trash"/></svg></button></div>`).join('')}${log.length > 8 ? `<div class="muted small">${log.length - 8} older entries</div>` : ''}</div>` : ''}
+        <button class="btn ghost" type="button" data-dact="progressview">Open the Progress entry sheet</button>
+        <div class="grid2">
+          <label class="field"><span>Actual start</span><input type="date" id="d-as" value="${t.actualStart || ''}"${log.length ? ' disabled title="Set by the first recorded quantity"' : ''}></label>
+          <label class="field"><span>Actual finish</span><input type="date" id="d-af" value="${t.actualFinish || ''}"${log.length ? ' disabled title="Set when the scope quantity is reached"' : ''}></label>
+        </div>
+        <div class="calc">Planned by status date: <b>${Math.round(t._planFrac * 100)}%</b> · Status: <b>${t.status}</b>${t._mh ? ` · Earned <b>${U.fmtNum(t._ev, 0)}</b> MH` : ''}</div>
+      </fieldset>` : `<fieldset><legend>Progress</legend>
+        <div class="grid2" style="align-items:end"><label class="field"><span>% complete</span><input type="range" id="d-pct-r" min="0" max="100" step="5" value="${t.pct || 0}"></label>
+          <label class="field"><span>&nbsp;</span><input type="number" id="d-pct" min="0" max="100" value="${U.round(t.pct || 0, 1)}"></label></div>
+        <div class="grid2">
+          <label class="field"><span>Actual start</span><input type="date" id="d-as" value="${t.actualStart || ''}"></label>
+          <label class="field"><span>Actual finish</span><input type="date" id="d-af" value="${t.actualFinish || ''}"></label>
+        </div>
+        <div class="small muted">Enter a unit and scope quantity above to measure progress by installed quantity instead.</div>
+        <div class="calc">Planned by status date: <b>${Math.round(t._planFrac * 100)}%</b> · Status: <b>${t.status}</b>${t._mh ? ` · Earned <b>${U.fmtNum(t._ev, 0)}</b> MH` : ''}</div>
       </fieldset>`;
 
     box.innerHTML = `
       <div class="head"><div><span class="eyebrow">Row ${t._row} · WBS ${t._wbs}${t._summary ? ' · Summary' : t.milestone ? ' · Milestone' : ''}</span></div>
         <button class="btn icon ghost" type="button" data-dact="close" aria-label="Hide details"><svg><use href="#i-panel"/></svg></button></div>
-      <label class="field"><span>Name</span><input type="text" id="d-name" value="${U.esc(t.name)}"></label>
+      <label class="field"><span>Name</span><input type="text" id="d-name" value="${U.esc(t.name)}"${dis}></label>
       ${effort}
-      <fieldset><legend>Dates</legend>
+      <fieldset${dis}><legend>Dates</legend>
         <div class="grid2">
           <label class="field"><span>Duration (days)</span><input type="number" id="d-dur" min="0" step="0.5" value="${t._dur}"${t._summary || t.effortDriven ? ' disabled' : ''}></label>
           <label class="field"><span>Start no earlier than</span><input type="date" id="d-snet" value="${t.constraintDate || ''}"${t._summary ? ' disabled' : ''}></label>
@@ -457,21 +611,13 @@ window.PS = window.PS || {};
         <div class="calc">Scheduled <b>${U.fmtDate(t.start)}</b> → <b>${U.fmtDate(t.finish)}</b> · ${t.critical ? '<span class="pill bad">Critical path</span>' : `Total float <b>${t.tf} d</b>`}
           ${t.baselineStart ? `<br>Baseline ${U.fmtDate(t.baselineStart)} → ${U.fmtDate(t.baselineFinish)}${t.baselineFinish && t.finish !== t.baselineFinish ? ` (${U.daysBetween(t.baselineFinish, t.finish) > 0 ? '+' : ''}${U.daysBetween(t.baselineFinish, t.finish)} d)` : ''}` : ''}</div>
       </fieldset>
-      <fieldset><legend>Predecessors</legend>
+      <fieldset${dis}><legend>Predecessors</legend>
         <div class="links">${linkRows || '<span class="empty-note">No predecessors. This task starts at the project start or its own date.</span>'}</div>
         <button class="btn" type="button" data-dact="addlink"${others.length ? '' : ' disabled'}><svg><use href="#i-plus"/></svg>Add predecessor</button>
         <div class="small muted">FS finish→start · SS start→start · FF finish→finish · SF start→finish. Lag in working days.${succs.length ? '<br>Successors: ' + succs.map((q) => q._row).join(', ') : ''}</div>
       </fieldset>
-      ${t._summary ? '' : `<fieldset><legend>Progress</legend>
-        <div class="grid2" style="align-items:end"><label class="field"><span>% complete</span><input type="range" id="d-pct-r" min="0" max="100" step="5" value="${t.pct || 0}"></label>
-          <label class="field"><span>&nbsp;</span><input type="number" id="d-pct" min="0" max="100" value="${U.round(t.pct || 0, 1)}"></label></div>
-        <div class="grid2">
-          <label class="field"><span>Actual start</span><input type="date" id="d-as" value="${t.actualStart || ''}"></label>
-          <label class="field"><span>Actual finish</span><input type="date" id="d-af" value="${t.actualFinish || ''}"></label>
-        </div>
-        <div class="calc">Planned by status date: <b>${Math.round(t._planFrac * 100)}%</b> · Status: <b>${t.status}</b>${t._mh ? ` · Earned <b>${U.fmtNum(t._ev, 0)}</b> MH` : ''}</div>
-      </fieldset>
-      <label class="field"><span>Resource / crew name</span><input type="text" id="d-res" list="res-list" value="${U.esc(t.resource || '')}"></label>`}
+      ${progress}
+      ${t._summary ? '' : `<label class="field"><span>Resource / crew name</span><input type="text" id="d-res" list="res-list" value="${U.esc(t.resource || '')}"${dis}></label>`}
       <label class="field"><span>Notes</span><textarea id="d-notes" rows="3">${U.esc(t.notes || '')}</textarea></label>`;
     if (app.detailFocus) { const f = document.getElementById(app.detailFocus); if (f) f.focus(); app.detailFocus = null; }
   }
@@ -483,10 +629,13 @@ window.PS = window.PS || {};
     const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     if (sel.length > 1) {
       if (id === 'd-bulkpct' && v !== '') mutate(() => sel.forEach((t) => { if (!t._summary) setPct(t, v); }));
-      if (id === 'd-bulkres') mutate(() => sel.forEach((t) => { if (!t._summary) t.resource = v.trim(); }));
+      if (id === 'd-bulkres' && !guard()) mutate(() => sel.forEach((t) => { if (!t._summary) t.resource = v.trim(); }));
       return;
     }
     const t = sel[0];
+    const PROGRESS_IDS = new Set(['d-pct', 'd-pct-r', 'd-as', 'd-af', 'd-notes', 'd-logdate', 'd-logqty']);
+    if (!PROGRESS_IDS.has(id) && guard()) return renderDetails();
+    if (id === 'd-logdate' || id === 'd-logqty') return;
     const lr = e.target.closest('.linkrow');
     if (lr) {
       const i = +lr.dataset.li, f = e.target.dataset.lf;
@@ -499,9 +648,16 @@ window.PS = window.PS || {};
     const num = (x) => (x === '' ? 0 : Number(x));
     const map = {
       'd-name': () => { t.name = v.trim(); },
-      'd-norm': () => { if (v) { t.normId = v; if (t.qty == null) t.qty = 0; applyNorm(t); } else { delete t.normId; delete t.qty; } },
-      'd-qty': () => { t.qty = num(v); applyNorm(t); },
-      'd-mh': () => { t.manhours = num(v); delete t.normId; delete t.qty; },
+      'd-unit': () => { t.unit = v.trim(); },
+      'd-qty': () => { if (num(v) > 0) t.qty = num(v); else delete t.qty; applyNorm(t); if (t.progressLog) syncLog(t); },
+      'd-normsearch': () => {
+        const n = getNorms().find((x) => normLabel(x) === v.trim()) || getNorms().find((x) => x.name.toLowerCase() === v.trim().toLowerCase());
+        if (!n) { toast('Pick a norm from the list'); return; }
+        t.normId = n.id; delete t.rate; t.unit = n.unit; applyNorm(t);
+      },
+      'd-rate': () => { t.rate = num(v); delete t.normId; applyNorm(t); },
+      'd-apf': () => { t.apf = U.clamp(num(v) || 1, 0.1, 5); if (t.apf === 1) delete t.apf; applyNorm(t); },
+      'd-mh': () => { t.manhours = num(v); delete t.normId; delete t.rate; },
       'd-crew': () => { t.crew = num(v); },
       'd-effort': () => { t.effortDriven = !!v; if (v && !(t.crew > 0)) { t.crew = 1; toast('Crew set to 1. Change it to match your gang size.'); } },
       'd-dur': () => { t.duration = Math.max(0, num(v)); t.effortDriven = false; },
@@ -513,8 +669,15 @@ window.PS = window.PS || {};
       'd-res': () => { t.resource = v.trim(); },
       'd-notes': () => { t.notes = v; },
     };
+    if (e.target.name === 'd-basis') {
+      return mutate(() => {
+        if (v === 'direct') { delete t.normId; delete t.rate; delete t.apf; }
+        if (v === 'custom') { const r = normRate(t); delete t.normId; t.rate = r != null ? r : (t.qty > 0 && t.manhours ? U.round(t.manhours / t.qty, 4) : 0); applyNorm(t); }
+        if (v === 'lib') { delete t.rate; app.detailFocus = 'd-normsearch'; app.pickNormFor = t.id; } else app.pickNormFor = null;
+      });
+    }
     if (map[id]) {
-      if (id === 'd-qty' || id === 'd-norm') app.detailFocus = id === 'd-norm' && v ? 'd-qty' : null;
+      if (id === 'd-normsearch') app.detailFocus = 'd-qty';
       mutate(map[id]);
     }
   }
@@ -526,10 +689,39 @@ window.PS = window.PS || {};
     const t = sel[0];
     switch (b.dataset.dact) {
       case 'close': ui.details = false; U.store.set('ps.ui', ui); renderDetails(); break;
-      case 'link': linkSelected(); break;
+      case 'link': linkSelected('FS', 0); break;
       case 'delete': deleteSelected(); break;
-      case 'unlink': mutate(() => { t.preds.splice(+b.dataset.li, 1); }); break;
+      case 'unlink': if (guard()) return; mutate(() => { t.preds.splice(+b.dataset.li, 1); }); break;
+      case 'logadd': {
+        const d = $('#d-logdate').value, q = Number($('#d-logqty').value);
+        if (!d) return toast('Choose the date the work was done');
+        if (!q) return toast('Enter the quantity done');
+        mutate(() => {
+          t.progressLog = (t.progressLog || []).concat({ date: d, qty: q });
+          syncLog(t);
+          if (d > app.project.statusDate) { app.project.statusDate = d; toast('Recorded. Status date moved to ' + U.fmtDate(d) + '.'); } else toast('Recorded');
+        });
+        app.detailFocus = 'd-logqty';
+        break;
+      }
+      case 'logdel': {
+        const i = (t.progressLog || []).findIndex((e) => e.date === b.dataset.date && String(e.qty) === b.dataset.qty);
+        if (i >= 0) mutate(() => { t.progressLog.splice(i, 1); syncLog(t); });
+        break;
+      }
+      case 'progressview': setView('progress'); break;
+      case 'savenorm': {
+        if (guard()) return;
+        const r = normRate(t);
+        if (r == null) return toast('Enter the norm first');
+        const list = getNorms();
+        list.unshift({ id: 'u-' + U.uid(), sector: 'My norms', cat: 'My norms', name: t.name, unit: t.unit || 'unit', mh: r });
+        setNorms(list);
+        toast('Saved to the norms library under My norms');
+        break;
+      }
       case 'addlink': {
+        if (guard()) return;
         const prev = tasks()[tasks().indexOf(t) - 1];
         const cand = tasks().filter((q) => q.id !== t.id && !t._ancestors.includes(q.id) && !q._ancestors.includes(t.id) && !t.preds.some((p) => p.id === q.id));
         if (!cand.length) return toast('No other task is available to link');
@@ -541,27 +733,41 @@ window.PS = window.PS || {};
     }
   }
 
+  // ---------------------------------------------------------------- progress entry view
+  const progressCtx = {
+    get project() { return app.project; },
+    get res() { return app.res; },
+    mutate: (fn) => mutate(fn),
+    setPeriodQty, syncLog, toast, guard, isLocked, unitList, applyNorm,
+    select: (id) => { app.selected = new Set([id]); app.anchor = id; setView('schedule'); },
+  };
+
   // ---------------------------------------------------------------- norms view
-  let normFilter = '';
+  let normFilter = '', normSector = '';
   function renderNorms() {
     const norms = getNorms();
-    const f = normFilter.toLowerCase();
-    const list = norms.map((n, i) => ({ n, i })).filter(({ n }) => !f || (n.cat + ' ' + n.name + ' ' + n.unit).toLowerCase().includes(f));
+    const words = normFilter.toLowerCase().split(/\s+/).filter(Boolean);
+    const sectors = [...new Set(norms.map((n) => n.sector || 'My norms'))];
+    const list = norms.map((n, i) => ({ n, i })).filter(({ n }) => (!normSector || (n.sector || 'My norms') === normSector)
+      && words.every((w) => ((n.sector || '') + ' ' + n.cat + ' ' + n.name + ' ' + n.unit).toLowerCase().includes(w)));
     const used = new Map();
     tasks().forEach((t) => { if (t.normId) used.set(t.normId, (used.get(t.normId) || 0) + 1); });
     $('#norms').innerHTML = `
       <div class="dash-head"><div><span class="eyebrow">Library</span><h2>Man-hour norms</h2></div>
         <div class="norm-tools">
-          <input type="search" id="n-filter" placeholder="Search norms" value="${U.esc(normFilter)}" aria-label="Search norms">
+          <select id="n-sector" aria-label="Sector"><option value="">All sectors (${norms.length})</option>${sectors.map((x) => `<option${x === normSector ? ' selected' : ''}>${U.esc(x)}</option>`).join('')}</select>
+          <input type="search" id="n-filter" placeholder="Search, e.g. weld sch 80" value="${U.esc(normFilter)}" aria-label="Search norms">
           <button class="btn" type="button" data-nact="add"><svg><use href="#i-plus"/></svg>Add norm</button>
           <button class="btn" type="button" data-nact="export"><svg><use href="#i-download"/></svg>Export</button>
           <label class="btn" for="n-import"><svg><use href="#i-upload"/></svg>Import</label><input type="file" id="n-import" accept=".xlsx,.xls,.csv" hidden>
           <button class="btn ghost" type="button" data-nact="reset">Restore defaults</button>
         </div></div>
-      <div class="note">These figures are <b>indicative planning values</b>, compiled from commonly quoted ranges. Real productivity depends on country, site conditions, crew skill, equipment and method. Replace them with your own historical rates, or use the productivity factor in Project settings (currently <b>${app.project.productivityFactor || 1}</b>) to scale all of them. Pick a norm in a task's details panel and enter a quantity to get its man-hours.</div>
+      <div class="note">These figures are <b>indicative planning values</b>, compiled from commonly quoted ranges. Real productivity depends on country, site conditions, crew skill, equipment and method. Replace them with your own historical rates, or use the productivity factor in Project settings (currently <b>${app.project.productivityFactor || 1}</b>) to scale all of them. Pick a norm in a task's details panel and enter a quantity to get its man-hours, or give an activity its own norm.</div>
+      <div class="small muted" style="margin:0 0 6px">Showing ${list.length} of ${norms.length} norms</div>
       <div class="card wide table-scroll" style="padding:4px 8px">
-        <table class="plain"><thead><tr><th style="min-width:170px">Category</th><th style="min-width:280px">Activity</th><th style="min-width:90px">Unit</th><th class="num" style="min-width:110px">MH per unit</th><th class="num">Used</th><th></th></tr></thead>
-        <tbody>${list.map(({ n, i }) => `<tr data-ni="${i}">
+        <table class="plain"><thead><tr><th style="min-width:150px">Sector</th><th style="min-width:170px">Category</th><th style="min-width:280px">Activity</th><th style="min-width:90px">Unit</th><th class="num" style="min-width:110px">MH per unit</th><th class="num">Used</th><th></th></tr></thead>
+ <tbody>${list.map(({ n, i }) => `<tr data-ni="${i}">
+          <td><input class="cell" data-nf="sector" value="${U.esc(n.sector || '')}" list="sector-list" aria-label="Sector"></td>
           <td><input class="cell" data-nf="cat" value="${U.esc(n.cat)}" list="cat-list" aria-label="Category"></td>
           <td><input class="cell" data-nf="name" value="${U.esc(n.name)}" aria-label="Activity"></td>
           <td><input class="cell" data-nf="unit" value="${U.esc(n.unit)}" aria-label="Unit"></td>
@@ -569,6 +775,7 @@ window.PS = window.PS || {};
           <td class="num muted">${used.get(n.id) || ''}</td>
           <td><button class="btn icon ghost" type="button" data-nact="del" aria-label="Delete norm"><svg><use href="#i-trash"/></svg></button></td>
         </tr>`).join('')}</tbody></table>
+        <datalist id="sector-list">${sectors.map((c) => `<option value="${U.esc(c)}">`).join('')}</datalist>
         <datalist id="cat-list">${[...new Set(norms.map((n) => n.cat))].map((c) => `<option value="${U.esc(c)}">`).join('')}</datalist>
       </div>`;
   }
@@ -585,6 +792,7 @@ window.PS = window.PS || {};
         setNorms(norms);
         toast('Norm saved. Tasks already using it keep their man-hours until you change their quantity.');
       }
+      if (e.target.id === 'n-sector') { normSector = e.target.value; renderNorms(); }
       if (e.target.id === 'n-import' && e.target.files[0]) importNorms(e.target.files[0]);
     });
     root.addEventListener('click', async (e) => {
@@ -592,14 +800,18 @@ window.PS = window.PS || {};
       if (!b) return;
       const norms = getNorms();
       if (b.dataset.nact === 'add') {
-        norms.unshift({ id: 'u-' + U.uid(), cat: 'My norms', name: 'New activity', unit: 'unit', mh: 1 });
-        setNorms(norms); normFilter = ''; renderNorms();
+        norms.unshift({ id: 'u-' + U.uid(), sector: 'My norms', cat: 'My norms', name: 'New activity', unit: 'unit', mh: 1 });
+        setNorms(norms); normFilter = ''; normSector = ''; renderNorms();
         const inp = $('#norms tr[data-ni="0"] input[data-nf="name"]'); if (inp) { inp.focus(); inp.select(); }
       }
-      if (b.dataset.nact === 'del') { norms.splice(+b.closest('tr').dataset.ni, 1); setNorms(norms); renderNorms(); }
+      if (b.dataset.nact === 'del') {
+        const [gone] = norms.splice(+b.closest('tr').dataset.ni, 1);
+        if (PS.DEFAULT_NORMS.some((d) => d.id === gone.id)) U.store.set('ps.norms.deleted', U.store.get('ps.norms.deleted', []).concat(gone.id));
+        setNorms(norms); renderNorms();
+      }
       if (b.dataset.nact === 'export') safe(() => PS.exporters.normsExcel(norms));
       if (b.dataset.nact === 'reset') {
-        if (await confirmDlg('Restore the built-in norms?', 'Your own edits and added norms will be replaced by the original library.', 'Restore')) { U.store.del('ps.norms'); renderNorms(); toast('Built-in norms restored'); }
+        if (await confirmDlg('Restore the built-in norms?', 'Your own edits and added norms will be replaced by the original library.', 'Restore')) { U.store.del('ps.norms'); U.store.del('ps.norms.deleted'); renderNorms(); toast('Built-in norms restored'); }
       }
     });
   }
@@ -609,10 +821,10 @@ window.PS = window.PS || {};
     const rows = r.sheets[r.sheetNames[0]];
     const h = rows[0].map((x) => String(x).toLowerCase());
     const ci = (re) => h.findIndex((x) => re.test(x));
-    const c = { cat: ci(/categ|discipline|trade/), name: ci(/activ|item|desc|name/), unit: ci(/^unit|uom/), mh: ci(/mh|man|hour|norm|rate/) };
+    const c = { sector: ci(/sector|industry/), cat: ci(/categ|discipline|trade/), name: ci(/activ|item|desc|name/), unit: ci(/^unit|uom/), mh: ci(/mh|man|hour|norm|rate/) };
     if (c.name < 0 || c.mh < 0) return toast('Could not find Activity and Man-hours columns in the first row');
     const add = rows.slice(1).filter((r2) => r2[c.name] !== '' && !isNaN(parseFloat(r2[c.mh]))).map((r2) => ({
-      id: 'u-' + U.uid(), cat: c.cat >= 0 ? String(r2[c.cat] || 'Imported') : 'Imported', name: String(r2[c.name]), unit: c.unit >= 0 ? String(r2[c.unit] || 'unit') : 'unit', mh: parseFloat(r2[c.mh]),
+      id: 'u-' + U.uid(), sector: c.sector >= 0 ? String(r2[c.sector] || 'My norms') : 'My norms', cat: c.cat >= 0 ? String(r2[c.cat] || 'Imported') : 'Imported', name: String(r2[c.name]), unit: c.unit >= 0 ? String(r2[c.unit] || 'unit') : 'unit', mh: parseFloat(r2[c.mh]),
     }));
     setNorms(getNorms().concat(add));
     renderNorms();
@@ -646,6 +858,10 @@ window.PS = window.PS || {};
           <p class="small muted" style="margin:0">Multiplies every norm. Use 1.2 for a difficult site (20% more man-hours), 0.9 for a very productive crew.</p>
           <button class="btn" type="button" data-sact="reapply">Re-apply norms to all tasks that use them</button>
         </div>
+        <div class="card"><h3>Schedule lock</h3>
+          <p class="small" style="margin:0">${p.locked ? '<b>Locked.</b> Tasks, dates, links, quantities and man-hours cannot be changed. Progress and the status date can still be updated.' : 'Lock the schedule once it is approved so nobody changes the plan by accident. Progress can still be recorded while it is locked.'}</p>
+          <div><button class="btn ${p.locked ? '' : 'primary'}" type="button" data-sact="lock"><svg><use href="#i-${p.locked ? 'unlock' : 'lock'}"/></svg>${p.locked ? 'Unlock schedule' : 'Lock schedule'}</button></div>
+        </div>
         <div class="card"><h3>Baseline</h3>
           <p class="small" style="margin:0">${r.hasBaseline ? `A baseline is saved. Baseline finish: <b>${U.fmtDate(r.baselineFinishISO)}</b>, current forecast <b>${U.fmtDate(r.finishISO)}</b>.` : 'No baseline yet. Save one when the plan is approved, so the dashboard can show planned vs actual and finish variance.'}</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-sact="baseline">${r.hasBaseline ? 'Replace baseline with current plan' : 'Save baseline'}</button>
@@ -662,11 +878,14 @@ window.PS = window.PS || {};
     const root = $('#settings');
     root.addEventListener('change', (e) => {
       const p = app.project, v = e.target.value, id = e.target.id;
+      if (e.target.dataset.wd != null && guard()) return renderSettings();
       if (e.target.dataset.wd != null) {
         const days = $$('[data-wd]', root).filter((x) => x.checked).map((x) => +x.dataset.wd);
         if (!days.length) { toast('Keep at least one working day'); return renderSettings(); }
         return mutate(() => { p.calendar.workDays = days; });
       }
+      const free = new Set(['s-name', 's-status', 's-lockprog']);
+      if (!free.has(id) && (e.target.dataset.wd != null || id.startsWith('s-')) && guard()) return renderSettings();
       const m = {
         's-name': () => { p.name = v.trim() || 'Untitled project'; },
         's-start': () => { if (v) p.startDate = v; },
@@ -684,8 +903,10 @@ window.PS = window.PS || {};
       const p = app.project;
       switch (b.dataset.sact) {
         case 'today': mutate(() => { p.statusDate = U.todayISO(); }); break;
-        case 'reapply': { let n = 0; mutate(() => tasks().forEach((t) => { if (t.normId && !t._summary) { applyNorm(t); n++; } })); toast(`Updated ${n} tasks`); break; }
+        case 'lock': p.locked = !p.locked; save(); renderAll(); toast(p.locked ? 'Schedule locked' : 'Schedule unlocked'); break;
+        case 'reapply': { if (guard()) return; let n = 0; mutate(() => tasks().forEach((t) => { if (t.normId && !t._summary) { applyNorm(t); n++; } })); toast(`Updated ${n} tasks`); break; }
         case 'baseline':
+          if (guard()) return;
           mutate(() => tasks().forEach((t) => {
             if (t._summary) { delete t.baselineStart; delete t.baselineFinish; return; }
             t.baselineStart = t.start; t.baselineFinish = t.finish; t.baselineDuration = t._dur; t.baselineManhours = t._mh;
@@ -693,6 +914,7 @@ window.PS = window.PS || {};
           toast('Baseline saved');
           break;
         case 'clearbl':
+          if (guard()) return;
           if (await confirmDlg('Clear the baseline?', 'Planned-vs-actual comparisons will use the current schedule instead.', 'Clear baseline')) {
             mutate(() => tasks().forEach((t) => { delete t.baselineStart; delete t.baselineFinish; delete t.baselineDuration; delete t.baselineManhours; }));
           }
@@ -735,52 +957,141 @@ window.PS = window.PS || {};
     return new Promise((res) => dlg.addEventListener('close', () => res(dlg.returnValue === 'ok'), { once: true }));
   }
 
+  // ---------------------------------------------------------------- projects manager
+  let projFilter = '';
+  const projSel = new Set();
+  function projectStats(id) {
+    const raw = localStorage.getItem('ps.p.' + id) || '';
+    const p = id === app.project.id ? app.project : loadProject(id);
+    if (!p) return null;
+    let r = id === app.project.id ? app.res : null;
+    if (!r) { try { r = S.compute(normalise(JSON.parse(JSON.stringify(p)))); } catch (e) { r = null; } }
+    const leaves = r ? r.leaves : [];
+    const pct = leaves.reduce((a, t) => a + (t._wt || 0) * (t.pct || 0) / 100, 0);
+    return { p, r, count: leaves.length, pct, kb: raw.length / 1024 };
+  }
+  /* Store projects that came from a backup or bundle, each under a fresh id. */
+  function addProjects(list) {
+    const l = index();
+    list.forEach((p) => {
+      p = normalise(p); p.id = U.uid(); p.updated = Date.now();
+      U.store.set('ps.p.' + p.id, clean(p));
+      l.unshift({ id: p.id, name: p.name, updated: p.updated });
+    });
+    saveIndex(l);
+  }
   function renderProjects() {
     const list = index();
-    $('#projects-body').innerHTML = `<h2>Projects</h2>
-      <div class="table-scroll"><table class="plain"><thead><tr><th>Name</th><th>Last changed</th><th></th></tr></thead><tbody>
-      ${list.map((p) => `<tr data-pid="${p.id}"><td><input class="cell" data-pact="rename" value="${U.esc(p.name)}" aria-label="Project name" style="border:1px solid var(--line-soft);border-radius:4px"></td>
-        <td class="muted small">${new Date(p.updated).toLocaleString()}</td>
-        <td style="white-space:nowrap"><button class="btn" type="button" data-pact="open"${p.id === app.project.id ? ' disabled' : ''}>${p.id === app.project.id ? 'Open now' : 'Open'}</button>
-        <button class="btn ghost" type="button" data-pact="dup">Duplicate</button>
-        <button class="btn icon ghost danger" type="button" data-pact="del" aria-label="Delete"><svg><use href="#i-trash"/></svg></button></td></tr>`).join('')}
-      </tbody></table></div>
-      <div class="dlg-foot" style="justify-content:space-between">
-        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="button" data-pact="new"><svg><use href="#i-plus"/></svg>New blank project</button>
-        <button class="btn" type="button" data-pact="sample">Add example project</button>
-        <label class="btn" for="p-open"><svg><use href="#i-upload"/></svg>Open backup</label><input type="file" id="p-open" accept=".json" hidden></span>
+    if (!list.some((x) => x.id === app.project.id)) list.unshift({ id: app.project.id, name: app.project.name, updated: app.project.updated || Date.now() });
+    const f = projFilter.trim().toLowerCase();
+    const shown = list.filter((x) => !f || x.name.toLowerCase().includes(f));
+    let used = 0;
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('ps.')) used += (localStorage.getItem(k) || '').length; } } catch (e) { /* storage blocked */ }
+    [...projSel].forEach((id) => { if (!list.some((x) => x.id === id)) projSel.delete(id); });
+    const rows = shown.map((x) => {
+      const st = projectStats(x.id);
+      if (!st) return '';
+      const cur = x.id === app.project.id;
+      return `<tr data-pid="${x.id}" class="${cur ? 'current' : ''}">
+        <td><input type="checkbox" data-pact="sel"${projSel.has(x.id) ? ' checked' : ''} aria-label="Select ${U.esc(x.name)}"></td>
+        <td><input class="cell pname" data-pact="rename" value="${U.esc(x.name)}" aria-label="Project name">
+          <div class="small muted">${st.r ? `${U.fmtDate(st.r.startISO)} → ${U.fmtDate(st.r.finishISO)}` : ''}${st.p.locked ? ' · <span class="pill lock">Locked</span>' : ''}${cur ? ' · <span class="pill now">Open</span>' : ''}</div></td>
+        <td class="num">${st.count}</td>
+        <td><span class="pbar wide" style="--p:${U.clamp(st.pct, 0, 100)}%">${U.fmtNum(st.pct, 1)}%</span></td>
+        <td class="small muted">${new Date(x.updated || Date.now()).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}<br>${U.fmtNum(st.kb, 0)} KB</td>
+        <td class="pacts">
+          <button class="btn${cur ? '' : ' primary'}" type="button" data-pact="open"${cur ? ' disabled' : ''}>${cur ? 'Open now' : 'Open'}</button>
+          <button class="btn icon ghost" type="button" data-pact="dup" title="Duplicate" aria-label="Duplicate"><svg><use href="#i-copy"/></svg></button>
+          <button class="btn icon ghost" type="button" data-pact="backup" title="Download backup (.json)" aria-label="Download backup"><svg><use href="#i-download"/></svg></button>
+          <button class="btn ghost" type="button" data-pact="excel" title="Download the Excel report">Excel</button>
+          <button class="btn icon ghost danger" type="button" data-pact="del" title="Delete" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+        </td></tr>`;
+    }).join('');
+    $('#projects-body').innerHTML = `<div class="proj-head"><div><span class="eyebrow">Saved in this browser</span><h2>Projects</h2></div>
+        <input type="search" id="p-filter" placeholder="Search projects" value="${U.esc(projFilter)}" aria-label="Search projects"></div>
+      <div class="proj-actions">
+        <button class="btn primary" type="button" data-pact="new"><svg><use href="#i-plus"/></svg>New project</button>
+        <button class="btn" type="button" data-pact="import"><svg><use href="#i-upload"/></svg>Import schedule file</button>
+        <label class="btn" for="p-open"><svg><use href="#i-folder"/></svg>Open backups</label><input type="file" id="p-open" accept=".json" multiple hidden>
+        <button class="btn" type="button" data-pact="exportall"><svg><use href="#i-download"/></svg>Back up all</button>
+        <button class="btn ghost" type="button" data-pact="sample">Add example project</button>
+        <span class="spacer"></span>
+        <button class="btn danger" type="button" data-pact="delsel"${projSel.size ? '' : ' disabled'}><svg><use href="#i-trash"/></svg>Delete selected${projSel.size ? ' (' + projSel.size + ')' : ''}</button>
+      </div>
+      <div class="table-scroll proj-table"><table class="plain"><thead><tr><th><input type="checkbox" data-pact="selall" aria-label="Select all"${projSel.size && projSel.size === shown.length ? ' checked' : ''}></th><th>Project</th><th class="num">Activities</th><th>Progress</th><th>Last changed</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" class="muted" style="padding:14px">No projects match.</td></tr>'}</tbody></table></div>
+      <div class="dlg-foot" style="justify-content:space-between"><span class="small muted">${list.length} project${list.length === 1 ? '' : 's'} · ${U.fmtNum(used / 1024, 0)} KB of browser storage used (about 5,000 KB available). Back up regularly: clearing browser data deletes projects.</span>
         <button class="btn" value="close">Close</button></div>`;
   }
   function bindProjects() {
     const body = $('#projects-body');
-    body.addEventListener('click', (e) => {
+    body.addEventListener('click', async (e) => {
       const b = e.target.closest('[data-pact]');
       if (!b || b.tagName === 'INPUT') return;
       const tr = b.closest('tr');
       const id = tr && tr.dataset.pid;
+      const load = () => (id === app.project.id ? clean(app.project) : loadProject(id));
       switch (b.dataset.pact) {
-        case 'open': $('#dlg-projects').close(); openProject(loadProject(id)); break;
-        case 'dup': { const p = loadProject(id); p.id = U.uid(); p.name += ' (copy)'; U.store.set('ps.p.' + p.id, p); const l = index(); l.unshift({ id: p.id, name: p.name, updated: Date.now() }); saveIndex(l); renderProjects(); renderPicker(); break; }
-        case 'del': $('#dlg-projects').close(); deleteProject(id); break;
+        case 'open': $('#dlg-projects').close(); openProject(loadProject(id)); toast('Opened ' + app.project.name); break;
+        case 'dup': { const p = load(); p.name += ' (copy)'; p.locked = false; addProjects([p]); renderProjects(); renderPicker(); toast('Duplicated'); break; }
+        case 'backup': PS.exporters.backup(load()); break;
+        case 'excel': {
+          const p = normalise(load());
+          toast('Building the Excel report…', 6000);
+          PS.report.excel(p, S.compute(p)).then(() => toast('Download started')).catch((err) => toast(err.message || 'The report could not be created'));
+          break;
+        }
+        case 'del': $('#dlg-projects').close(); await deleteProject(id); break;
+        case 'delsel': {
+          const ids = [...projSel];
+          if (!ids.length) return;
+          $('#dlg-projects').close();
+          if (!(await confirmDlg(`Delete ${ids.length} project${ids.length > 1 ? 's' : ''}?`, 'They will be removed from this browser. Back them up first if you may need them.', 'Delete', true))) return;
+          ids.forEach((x) => U.store.del('ps.p.' + x));
+          const left = index().filter((x) => !projSel.has(x.id));
+          saveIndex(left);
+          if (projSel.has(app.project.id)) { const nx = left.length ? loadProject(left[0].id) : null; openProject(nx || newProject('Untitled project')); }
+          projSel.clear(); renderPicker();
+          toast(`Deleted ${ids.length} project${ids.length > 1 ? 's' : ''}`);
+          break;
+        }
         case 'new': $('#dlg-projects').close(); openProject(newProject('Untitled project')); toast('New project created. Add tasks or import a file.'); break;
         case 'sample': $('#dlg-projects').close(); openProject(PS.makeSampleProject()); break;
+        case 'import': $('#dlg-projects').close(); imp.mode = 'new'; openImport(); break;
+        case 'exportall': {
+          const all = index().map((x) => (x.id === app.project.id ? clean(app.project) : loadProject(x.id))).filter(Boolean);
+          PS.exporters.bundle(all);
+          toast(`Backed up ${all.length} projects in one file`);
+          break;
+        }
         default: break;
       }
     });
+    body.addEventListener('input', (e) => {
+      if (e.target.id === 'p-filter') { projFilter = e.target.value; renderProjects(); const f = $('#p-filter'); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }
+    });
     body.addEventListener('change', async (e) => {
-      if (e.target.dataset.pact === 'rename') {
+      const act = e.target.dataset.pact;
+      if (act === 'sel') { const id = e.target.closest('tr').dataset.pid; if (e.target.checked) projSel.add(id); else projSel.delete(id); renderProjects(); return; }
+      if (act === 'selall') { const f = projFilter.trim().toLowerCase(); index().filter((x) => !f || x.name.toLowerCase().includes(f)).forEach((x) => { if (e.target.checked) projSel.add(x.id); else projSel.delete(x.id); }); renderProjects(); return; }
+      if (act === 'rename') {
         const id = e.target.closest('tr').dataset.pid;
         const name = e.target.value.trim() || 'Untitled project';
-        if (id === app.project.id) { app.project.name = name; save(); setTimeout(renderPicker, 300); }
+        if (id === app.project.id) { app.project.name = name; save(); setTimeout(() => { renderPicker(); }, 300); }
         else { const p = loadProject(id); p.name = name; U.store.set('ps.p.' + id, p); const l = index(); l.find((x) => x.id === id).name = name; saveIndex(l); renderPicker(); }
+        toast('Renamed');
       }
-      if (e.target.id === 'p-open' && e.target.files[0]) {
-        const r = await PS.importers.readFile(e.target.files[0]);
-        if (r.kind !== 'project') return toast(r.message || 'Choose a .planline.json backup file');
-        $('#dlg-projects').close();
-        const p = r.project; p.id = U.uid();
-        openProject(p);
-        toast('Backup opened as a new project');
+      if (e.target.id === 'p-open' && e.target.files.length) {
+        const got = [];
+        for (const file of e.target.files) {
+          const r = await PS.importers.readFile(file);
+          if (r.kind === 'project') got.push(r.project);
+          else if (r.kind === 'bundle') got.push(...r.projects);
+        }
+        if (!got.length) return toast('Choose Planline backup files (.planline.json)');
+        addProjects(got);
+        renderProjects(); renderPicker();
+        toast(`Added ${got.length} project${got.length > 1 ? 's' : ''}`);
       }
     });
   }
@@ -817,6 +1128,11 @@ window.PS = window.PS || {};
     const r = await PS.importers.readFile(file);
     imp.result = r;
     if (r.kind === 'error') return renderImportStep1(r.message);
+    if (r.kind === 'bundle') {
+      addProjects(r.projects);
+      $('#dlg-import').close(); renderPicker();
+      return toast(`Added ${r.projects.length} projects from the backup. Open them from Projects.`);
+    }
     if (r.kind === 'table') {
       imp.sheet = r.sheetNames.find((n) => r.sheets[n].length > 1) || r.sheetNames[0];
       setupSheet();
@@ -827,13 +1143,14 @@ window.PS = window.PS || {};
     const rows = imp.result.sheets[imp.sheet];
     imp.header = PS.importers.detectHeader(rows);
     imp.map = PS.importers.autoMap(rows[imp.header] || []);
+    imp.dateOrder = PS.importers.guessDateOrder(rows.slice(imp.header + 1), imp.map) || imp.dateOrder;
   }
   function importPreview() {
     const r = imp.result;
     if (r.kind === 'project') return { tasks: r.project.tasks, startDate: r.project.startDate, warnings: [] };
     const rows = r.sheets[imp.sheet];
     if (imp.map.name == null) return { tasks: [], warnings: ['Choose which column holds the task names.'] };
-    return PS.importers.buildTasks(rows.slice(imp.header + 1), imp.map, { hoursPerDay: hpd(), daysPerWeek: dpw(), dateOrder: imp.dateOrder, lockDates: imp.lock, calendar: app.project.calendar });
+    return PS.importers.buildTasks(rows.slice(imp.header + 1), imp.map, { hoursPerDay: hpd(), daysPerWeek: dpw(), dateOrder: imp.dateOrder, lockDates: imp.lock, calendar: app.project.calendar, fmt: ((r.fmt && r.fmt[imp.sheet]) || []).slice(imp.header + 1) });
   }
   function renderImportStep2() {
     const r = imp.result;
@@ -881,17 +1198,20 @@ window.PS = window.PS || {};
     }
     if (imp.mode === 'new') {
       const base = imp.file.name.replace(/\.[^.]+$/, '');
-      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined, statusDate: r.project.statusDate || undefined } : { name: base };
+      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined, statusDate: r.project.statusDate || undefined }
+        : { name: base, calendar: pv.workDays ? { workDays: pv.workDays, hoursPerDay: hpd(), holidays: [] } : undefined };
       if (!extra.statusDate) delete extra.statusDate;
       if (!extra.calendar) delete extra.calendar;
       const p = newProject(extra.name, extra);
       p.startDate = pv.startDate || U.todayISO();
+      if (r.kind === 'table' && pv.statusDate) p.statusDate = pv.statusDate;
       p.tasks = incoming;
       $('#dlg-import').close();
       openProject(p);
       toast(`Imported ${incoming.length} tasks into a new project`);
       return;
     }
+    if (guard()) return;
     const offset = imp.mode === 'append' ? nextId() - 1 : 0;
     incoming.forEach((t) => { t.id += offset; t.preds = (t.preds || []).map((p) => Object.assign({}, p, { id: p.id + offset })); });
     mutate(() => {
@@ -910,7 +1230,7 @@ window.PS = window.PS || {};
       if (t.id === 'imp-paste') return;
       if (t.name === 'imode') imp.mode = t.value;
       if (t.id === 'imp-sheet') { imp.sheet = t.value; setupSheet(); }
-      if (t.id === 'imp-header') { imp.header = Math.max(0, (+t.value || 1) - 1); imp.map = PS.importers.autoMap(imp.result.sheets[imp.sheet][imp.header] || []); }
+      if (t.id === 'imp-header') { imp.header = Math.max(0, (+t.value || 1) - 1); imp.map = PS.importers.autoMap(imp.result.sheets[imp.sheet][imp.header] || []); imp.dateOrder = PS.importers.guessDateOrder(imp.result.sheets[imp.sheet].slice(imp.header + 1), imp.map) || imp.dateOrder; }
       if (t.id === 'imp-dates') imp.dateOrder = t.value;
       if (t.id === 'imp-lock') imp.lock = t.checked;
       if (t.dataset.map) { if (t.value === '') delete imp.map[t.dataset.map]; else imp.map[t.dataset.map] = +t.value; }
@@ -924,6 +1244,11 @@ window.PS = window.PS || {};
       if (b.dataset.iact === 'paste') {
         const r = PS.importers.readPasted($('#imp-paste').value);
         if (r.kind === 'error') return renderImportStep1(r.message);
+    if (r.kind === 'bundle') {
+      addProjects(r.projects);
+      $('#dlg-import').close(); renderPicker();
+      return toast(`Added ${r.projects.length} projects from the backup. Open them from Projects.`);
+    }
         imp.file = { name: 'Pasted tasks' }; imp.result = r; imp.sheet = 'Pasted'; setupSheet(); renderImportStep2();
       }
       if (b.dataset.iact === 'go') doImport();
@@ -935,10 +1260,10 @@ window.PS = window.PS || {};
       <div class="help-body">
         <ol>
           <li><b>Build the WBS.</b> Add tasks, or import them from Excel, CSV or MS Project XML. Use <b>Indent</b> to make sub-activities; parents become summary rows that roll up dates, man-hours and progress.</li>
-          <li><b>Estimate man-hours.</b> Type them in, or open a task's details, pick an industry norm and enter the quantity. Tick “Calculate duration from man-hours” to get days = man-hours ÷ (crew × hours per day).</li>
-          <li><b>Link the logic.</b> Type predecessors by row number, or select rows and press <b>Link</b>. The critical path turns red on the Gantt chart.</li>
-          <li><b>Save a baseline</b> in Project settings once the plan is agreed.</li>
-          <li><b>Track progress.</b> Update % complete against the status date. The dashboard shows the S-curve, SPI, phase progress and what needs attention.</li>
+          <li><b>Estimate man-hours.</b> Type them in, or open a task's details, give it a unit and scope quantity, then pick a library norm or type the activity's own norm (MH per unit). Tick “Calculate duration from man-hours” to get days = man-hours ÷ (crew × hours per day). Each activity's <b>weight</b> is its share of total man-hours.</li>
+          <li><b>Link the logic.</b> Type predecessors by row number, or select rows and choose finish-to-start, start-to-start, finish-to-finish or start-to-finish (with a lag) from <b>Link</b>. The critical path turns red on the Gantt chart.</li>
+          <li><b>Save a baseline</b> in Project settings once the plan is agreed, and use the <b>lock</b> button so the plan can't be changed by accident.</li>
+          <li><b>Track progress.</b> On the <b>Progress entry</b> tab, type the quantity done each day, week or month; % complete follows from quantity done ÷ scope. Activities without a quantity take a % complete directly. The dashboard shows the S-curve, SPI, phase progress and what needs attention.</li>
           <li><b>Export</b> an Excel report, CSV, MS Project XML or a backup.</li>
         </ol>
         <div><b>Predecessor format</b><ul>
@@ -949,7 +1274,7 @@ window.PS = window.PS || {};
         <div><b>Keyboard</b><ul>
           <li><code>Enter</code> save cell and move down · <code>Insert</code> new task · <code>Delete</code> remove selected rows</li>
           <li><code>Alt</code> + <code>→</code> / <code>←</code> indent / outdent · <code>Alt</code> + <code>↑</code> / <code>↓</code> move · <code>Ctrl</code> + <code>Z</code> / <code>Y</code> undo / redo</li></ul></div>
-        <div class="note">Your projects live only in this browser. Use Export › Project backup to keep a copy or move to another computer.</div>
+        <div class="note">Your projects live only in this browser. Use <b>Projects</b> to manage several projects and back them up, or Export › Project backup to keep a copy or move to another computer.</div>
       </div>
       <div class="dlg-foot"><button class="btn primary" value="close">Got it</button></div>`;
   }
@@ -983,9 +1308,9 @@ window.PS = window.PS || {};
   }
 
   function setView(v) {
-    ui.view = v; U.store.set('ps.ui', ui);
+    ui.view = v; U.store.set('ps.ui', ui); app.animate = true;
     $$('.tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.view === v ? 'true' : 'false'));
-    ['schedule', 'dashboard', 'norms', 'settings'].forEach((k) => { $('#view-' + k).hidden = k !== v; });
+    ['schedule', 'progress', 'dashboard', 'norms', 'settings'].forEach((k) => { const el = $('#view-' + k); el.hidden = k !== v; if (k === v) { el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter'); } });
     try { if (location.hash.slice(1) !== v) history.replaceState(null, '', '#' + v); } catch (e) { /* sandboxed */ }
     renderAll();
   }
@@ -1029,7 +1354,19 @@ window.PS = window.PS || {};
     $('#tb-outdent').addEventListener('click', () => shiftLevel(-1));
     $('#tb-up').addEventListener('click', () => move(-1));
     $('#tb-down').addEventListener('click', () => move(1));
-    $('#tb-link').addEventListener('click', linkSelected);
+    $$('#link-menu [data-link]').forEach((b) => b.addEventListener('click', () => {
+      $('#link-menu').open = false;
+      linkSelected(b.dataset.link, $('#link-lag').value);
+    }));
+    document.addEventListener('click', (e) => { const m = $('#link-menu'); if (m.open && !m.contains(e.target)) m.open = false; });
+    const toggleLock = () => {
+      const p = app.project;
+      p.locked = !p.locked;
+      save(); renderAll();
+      toast(p.locked ? 'Schedule locked. Progress can still be recorded.' : 'Schedule unlocked');
+    };
+    $('#tb-lock').addEventListener('click', toggleLock);
+    $('#lockbar-unlock').addEventListener('click', toggleLock);
     $('#tb-unlink').addEventListener('click', unlinkSelected);
     $('#tb-del').addEventListener('click', deleteSelected);
     $('#tb-undo').addEventListener('click', undo);
@@ -1154,7 +1491,7 @@ window.PS = window.PS || {};
     if (!p && list.length) p = loadProject(list[0].id);
     if (!p) p = PS.makeSampleProject();
     const hv = location.hash.slice(1);
-    if (['schedule', 'dashboard', 'norms', 'settings'].includes(hv)) ui.view = hv;
+    if (['schedule', 'progress', 'dashboard', 'norms', 'settings'].includes(hv)) ui.view = hv;
     app.project = normalise(p);
     recompute(); save();
     setView(ui.view);

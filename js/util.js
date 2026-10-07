@@ -118,11 +118,12 @@ PS.util = (function () {
       return v.getFullYear() + '-' + pad(v.getMonth() + 1) + '-' + pad(v.getDate());
     }
     if (typeof v === 'number' && v > 20000 && v < 80000) { // Excel serial
-      const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * DAY);
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v + 1e-6) * DAY); // drop the time of day
       return toISO(d);
     }
     let s = String(v).trim().replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*[\s,]+/i, '');
     s = s.replace(/[T\s]\d{1,2}:\d{2}.*$/, '').trim();
+    s = s.replace(/\s*(\*|\s[AaEe])$/, '').trim(); // Primavera marks actual dates "A" and constrained dates "*"
     let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
     if (m) return m[1] + '-' + pad(m[2]) + '-' + pad(m[3]);
     m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
