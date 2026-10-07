@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Critical Path Method (CPM) Explained with a Free Online Calculator | Planline</title>
+<meta name="description" content="Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/critical-path-method/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="Critical Path Method (CPM) Explained with a Free Online Calculator | Planline">
+<meta property="og:description" content="Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.">
+<meta property="og:url" content="https://planline.app/critical-path-method/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Critical Path Method (CPM) Explained with a Free Online Calculator | Planline">
+<meta name="twitter:description" content="Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"Critical path method","item":"https://planline.app/critical-path-method/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Critical path method explained","description":"Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.","dateModified":"2026-10-07","mainEntityOfPage":"https://planline.app/critical-path-method/","publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is total float?","acceptedAnswer":{"@type":"Answer","text":"The number of days an activity can be delayed without delaying the project finish date. Activities with zero total float are on the critical path."}},{"@type":"Question","name":"Can there be more than one critical path?","acceptedAnswer":{"@type":"Answer","text":"Yes. Two or more chains can have the same longest duration, and all of them are critical."}},{"@type":"Question","name":"What is the difference between CPM and PERT?","acceptedAnswer":{"@type":"Answer","text":"CPM uses one duration per activity. PERT uses optimistic, most likely and pessimistic durations to estimate the probability of finishing on time."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../index.html">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../index.html">Planline</a> › <a href="../guides/">Guides</a> › Critical path method</p>
+<h1>Critical path method explained</h1>
+<p class="lede">The critical path is the longest chain of linked activities through a project; any delay on it delays the finish date. Here is how it is calculated, with a small example, and a free calculator for your own schedule.</p>
+<div class="cta-row"><a class="btn" href="../index.html">Open the free scheduler</a><span class="cta-note">No sign-up, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<h2>The four steps of CPM</h2>
+<ol class="steps">
+<li><b>List the activities</b> and their durations.</li>
+<li><b>Link them</b> with their logic: which activity must finish (or start) before another can start (or finish).</li>
+<li><b>Forward pass:</b> from the project start, work out each activity's earliest start (ES) and earliest finish (EF = ES + duration).</li>
+<li><b>Backward pass:</b> from the project finish, work out the latest finish (LF) and latest start (LS = LF − duration). Total float = LS − ES. Activities with zero float are critical.</li>
+</ol>
+
+<h2>Worked example</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Activity</th><th class="num">Duration (days)</th><th>Predecessor</th><th class="num">ES</th><th class="num">EF</th><th class="num">LS</th><th class="num">LF</th><th class="num">Float</th></tr></thead>
+<tbody>
+<tr><td>A Foundations</td><td class="num">10</td><td>none</td><td class="num">0</td><td class="num">10</td><td class="num">0</td><td class="num">10</td><td class="num"><b>0</b></td></tr>
+<tr><td>B Steel erection</td><td class="num">15</td><td>A</td><td class="num">10</td><td class="num">25</td><td class="num">10</td><td class="num">25</td><td class="num"><b>0</b></td></tr>
+<tr><td>C Equipment delivery</td><td class="num">20</td><td>none</td><td class="num">0</td><td class="num">20</td><td class="num">5</td><td class="num">25</td><td class="num">5</td></tr>
+<tr><td>D Equipment setting</td><td class="num">5</td><td>B, C</td><td class="num">25</td><td class="num">30</td><td class="num">25</td><td class="num">30</td><td class="num"><b>0</b></td></tr>
+<tr><td>E Piping</td><td class="num">20</td><td>D</td><td class="num">30</td><td class="num">50</td><td class="num">30</td><td class="num">50</td><td class="num"><b>0</b></td></tr>
+</tbody></table></div>
+<p>The critical path is <b>A → B → D → E</b>, 50 days. Equipment delivery has 5 days of float: it can slip by up to 5 days without moving the finish date.</p>
+
+<h2>Link types and lag</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Link</th><th>Meaning</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td>FS (finish-to-start)</td><td>B starts after A finishes</td><td>Pour concrete after rebar is fixed</td></tr>
+<tr><td>SS (start-to-start)</td><td>B starts after A starts</td><td>Insulation starts 5 days after hydrotest starts (SS+5)</td></tr>
+<tr><td>FF (finish-to-finish)</td><td>B finishes after A finishes</td><td>Painting finishes 3 days after steel erection finishes (FF+3)</td></tr>
+<tr><td>SF (start-to-finish)</td><td>B finishes after A starts</td><td>Temporary power runs until permanent power starts</td></tr>
+</tbody></table></div>
+<p>Lag delays the successor by a number of days; a negative lag (lead) lets it overlap. In Planline you type links as <code>4</code>, <code>4SS+5</code> or <code>4FF-2</code>.</p>
+
+<h2>Calculate your own critical path</h2>
+<p>Enter your activities and links in the free scheduler. It runs the forward and backward pass on a working-day calendar with holidays, shows total float for every activity, highlights the critical path in the Gantt chart and lists it in the Excel report.</p>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>What is total float?</summary><p>The number of days an activity can be delayed without delaying the project finish date. Activities with zero total float are on the critical path.</p></details>
+<details><summary>Can there be more than one critical path?</summary><p>Yes. Two or more chains can have the same longest duration, and all of them are critical.</p></details>
+<details><summary>What is the difference between CPM and PERT?</summary><p>CPM uses one duration per activity. PERT uses optimistic, most likely and pessimistic durations to estimate the probability of finishing on time.</p></details>
+</div>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free, needs no sign-up and keeps your data in your browser. Start from the sample project or import your own file.</p>
+<p><a class="btn" href="../index.html">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../index.html">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../privacy.html">Privacy</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weighted Progress Measurement and S-Curves for EPC Projects | Planline</title>
+<meta name="description" content="How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/progress-measurement/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="Weighted Progress Measurement and S-Curves for EPC Projects | Planline">
+<meta property="og:description" content="How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.">
+<meta property="og:url" content="https://planline.app/progress-measurement/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Weighted Progress Measurement and S-Curves for EPC Projects | Planline">
+<meta name="twitter:description" content="How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"Progress measurement and S-curves","item":"https://planline.app/progress-measurement/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Weighted progress measurement and S-curves for EPC projects","description":"How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.","dateModified":"2026-10-07","mainEntityOfPage":"https://planline.app/progress-measurement/","publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How is activity weightage calculated?","acceptedAnswer":{"@type":"Answer","text":"Usually as the activity budget man-hours divided by the total budget man-hours of the project or package. Cost can be used instead, but man-hours is the norm for construction progress."}},{"@type":"Question","name":"What is the difference between physical progress and earned value?","acceptedAnswer":{"@type":"Answer","text":"Physical progress is earned man-hours divided by total budget man-hours. Earned value applies the same idea to cost and compares it with planned value and actual cost."}},{"@type":"Question","name":"Why is my S-curve not S-shaped?","acceptedAnswer":{"@type":"Answer","text":"Short projects, front-loaded weights, or activities with very uneven man-hours can flatten or skew the curve. That is fine; the comparison with actual progress is what matters."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../index.html"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../index.html">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../index.html">Planline</a> › <a href="../guides/">Guides</a> › Progress measurement and S-curves</p>
+<h1>Weighted progress measurement and S-curves for EPC projects</h1>
+<p class="lede">How project controls teams turn quantities installed into an overall percent complete, and how to read the planned versus actual S-curve. With a worked example you can reproduce in the free scheduler.</p>
+<div class="cta-row"><a class="btn" href="../index.html">Open the free scheduler</a><span class="cta-note">No sign-up, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<h2>Why weighted progress?</h2>
+<p>A simple average of activity percentages treats a one-day inspection the same as a three-month piping campaign. Weighted progress gives each activity a weight in proportion to its size, normally its budgeted man-hours, so the overall figure reflects how much of the work is really done.</p>
+
+<h2>The three formulas</h2>
+<ol>
+<li><b>Activity percent complete</b> = quantity done ÷ scope quantity. For example, 450 of 1,200 inch-dia welded is 37.5%.</li>
+<li><b>Activity weight</b> = activity budget man-hours ÷ total budget man-hours.</li>
+<li><b>Overall progress</b> = Σ (weight × activity percent complete), which is the same as earned man-hours ÷ total budget man-hours.</li>
+</ol>
+
+<h2>Worked example</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Activity</th><th class="num">Budget MH</th><th class="num">Weight</th><th class="num">Scope</th><th class="num">Done</th><th class="num">% complete</th><th class="num">Earned MH</th></tr></thead>
+<tbody>
+<tr><td>Steel erection</td><td class="num">2,000</td><td class="num">20%</td><td class="num">100 t</td><td class="num">100 t</td><td class="num">100%</td><td class="num">2,000</td></tr>
+<tr><td>Piping welding</td><td class="num">5,000</td><td class="num">50%</td><td class="num">4,000 in-dia</td><td class="num">1,600 in-dia</td><td class="num">40%</td><td class="num">2,000</td></tr>
+<tr><td>Cable pulling</td><td class="num">2,500</td><td class="num">25%</td><td class="num">10,000 m</td><td class="num">1,000 m</td><td class="num">10%</td><td class="num">250</td></tr>
+<tr><td>Loop checks</td><td class="num">500</td><td class="num">5%</td><td class="num">200 loops</td><td class="num">0</td><td class="num">0%</td><td class="num">0</td></tr>
+<tr><th>Total</th><th class="num">10,000</th><th class="num">100%</th><th></th><th></th><th></th><th class="num">4,250</th></tr>
+</tbody></table></div>
+<p>Overall progress is 4,250 ÷ 10,000 = <b>42.5%</b>. A simple average of the four percentages would have said 37.5%, understating the work done because the finished steel is a big share of the job.</p>
+
+<h2>Planned progress and the S-curve</h2>
+<p>Planned progress uses the same weights, but with each activity's planned percent complete at a date, found by spreading its man-hours over its planned duration. Adding these up week by week gives the planned cumulative curve, which is usually S-shaped: slow during mobilisation, steep during peak construction, flattening during commissioning.</p>
+<p>Plot actual cumulative progress on the same chart. If the actual line sits below the plan, the project is behind; the vertical gap is the progress variance and the horizontal gap is roughly the time behind schedule. Planline draws planned, baseline and actual curves automatically on the dashboard and in the Excel report.</p>
+
+<h2>Recording progress by period</h2>
+<p>The Progress entry sheet in Planline lets you enter quantities done per day, week or month. It keeps the cumulative quantity for each activity and shows period progress, cumulative actual and cumulative planned for the whole project, which is what most monthly progress reports need.</p>
+
+<h2>Common pitfalls</h2>
+<ul>
+<li><b>Changing weights mid-project</b> without re-baselining makes the curve jump. Freeze the weights with the baseline.</li>
+<li><b>Using duration as weight</b> overweights long, light activities such as procurement lead times.</li>
+<li><b>Mixing units</b>: keep a consistent unit per activity (inch-dia, tonnes, metres) and agree it with the client's progress measurement procedure.</li>
+<li><b>Rules of credit</b>: many contracts give partial credit by step (for example 30% on fit-up, 70% on welding). Split those activities or record the credited quantity.</li>
+</ul>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>How is activity weightage calculated?</summary><p>Usually as the activity budget man-hours divided by the total budget man-hours of the project or package. Cost can be used instead, but man-hours is the norm for construction progress.</p></details>
+<details><summary>What is the difference between physical progress and earned value?</summary><p>Physical progress is earned man-hours divided by total budget man-hours. Earned value applies the same idea to cost and compares it with planned value and actual cost.</p></details>
+<details><summary>Why is my S-curve not S-shaped?</summary><p>Short projects, front-loaded weights, or activities with very uneven man-hours can flatten or skew the curve. That is fine; the comparison with actual progress is what matters.</p></details>
+</div>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free, needs no sign-up and keeps your data in your browser. Start from the sample project or import your own file.</p>
+<p><a class="btn" href="../index.html">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../index.html">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../privacy.html">Privacy</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>
