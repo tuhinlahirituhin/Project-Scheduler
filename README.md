@@ -3,12 +3,12 @@
 A free, server-free project scheduler that runs entirely in the browser.
 
 - **WBS** with unlimited sub-activities (indent / outdent), summary roll-ups and WBS codes
-- **Import** from Excel (.xlsx/.xls), CSV, MS Project XML, or a Planline backup, with automatic column matching
+- **Import** from any Excel/CSV layout (columns matched by name, adjustable), rows pasted from a spreadsheet, MS Project / ProjectLibre XML, Primavera P6 .xer, or a Planline backup
 - **Man-hours** typed in, or calculated from an editable library of indicative industry norms (quantity × MH/unit × productivity factor); duration can be derived from man-hours ÷ (crew × hours/day)
 - **Scheduling logic**: FS / SS / FF / SF links with lead/lag, critical path, total float, working calendar with holidays, "start no earlier than" dates, status-date rescheduling, baseline
 - **Gantt chart** with dependency arrows, critical path, progress, baseline bars and day / week / month zoom
 - **Dashboard**: KPI tiles, S-curve (planned, baseline, actual), status mix, phase progress, man-hour histogram, a chart builder with PNG export, and a "needs attention" list
-- **Export**: Excel report (summary, schedule, critical path, weekly man-hours, phases, resources), CSV, MS Project XML, JSON backup
+- **Export**: formatted Excel report (dashboard with KPI tiles and charts, cell-based Gantt chart, schedule, critical path, weekly man-hours, phases, resources), CSV, MS Project XML, JSON backup
 
 All data is stored in the visitor's browser (localStorage). There is no server, database or login.
 
@@ -42,4 +42,5 @@ Cloudflare Pages or Netlify work the same way (no build command, output director
 | `js/norms.js` | Built-in man-hour norms (indicative values) |
 | `js/gantt.js`, `js/dashboard.js`, `js/analytics.js` | Gantt chart, dashboard, progress maths |
 | `js/app.js` | Editing, views and dialogs |
-| `vendor/` | SheetJS (Apache-2.0) and Chart.js (MIT) |
+| `js/report.js` | Formatted Excel report with dashboard and Gantt |
+| `vendor/` | SheetJS (Apache-2.0), ExcelJS (MIT) and Chart.js (MIT) |

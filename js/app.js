@@ -797,9 +797,12 @@ window.PS = window.PS || {};
       <label class="drop" id="drop" for="imp-file">
         <svg width="28" height="28"><use href="#i-upload"/></svg>
         <b>Drop a file here or click to choose</b>
-        <span class="small muted">Excel (.xlsx, .xls), CSV, MS Project XML (.xml) or a Planline backup (.json)</span>
+        <span class="small muted">Excel (.xlsx, .xls, .ods), CSV, MS Project / ProjectLibre XML, Primavera P6 (.xer) or a Planline backup (.json)</span>
       </label>
-      <input type="file" id="imp-file" accept=".xlsx,.xls,.csv,.xml,.json,.mpp" hidden>
+      <input type="file" id="imp-file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.txt,.xml,.xer,.json,.mpp" hidden>
+      <label class="field"><span>Or paste rows copied from Excel, Google Sheets or a web table (include the header row)</span>
+        <textarea id="imp-paste" rows="4" placeholder="Task name&#9;Duration&#9;Predecessors"></textarea></label>
+      <div><button class="btn" type="button" data-iact="paste">Use pasted rows</button></div>
       ${msg ? `<div class="note" style="background:color-mix(in srgb, var(--critical) 12%, var(--surface))">${U.esc(msg)}</div>` : ''}
       <div class="small muted">Using MS Project? Save your plan with <b>File › Save As › XML Format</b>, or export it to Excel. The native .mpp format cannot be read in a browser.
         Need a starting point? <button class="btn ghost small" type="button" data-iact="template" style="height:auto;padding:0 4px;color:var(--accent)">Download the import template</button></div>
@@ -878,7 +881,8 @@ window.PS = window.PS || {};
     }
     if (imp.mode === 'new') {
       const base = imp.file.name.replace(/\.[^.]+$/, '');
-      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined } : { name: base };
+      const extra = r.kind === 'project' ? { name: r.project.name || base, calendar: r.project.calendar || undefined, statusDate: r.project.statusDate || undefined } : { name: base };
+      if (!extra.statusDate) delete extra.statusDate;
       if (!extra.calendar) delete extra.calendar;
       const p = newProject(extra.name, extra);
       p.startDate = pv.startDate || U.todayISO();
@@ -903,6 +907,7 @@ window.PS = window.PS || {};
     body.addEventListener('change', (e) => {
       const t = e.target;
       if (t.id === 'imp-file' && t.files[0]) return readImport(t.files[0]);
+      if (t.id === 'imp-paste') return;
       if (t.name === 'imode') imp.mode = t.value;
       if (t.id === 'imp-sheet') { imp.sheet = t.value; setupSheet(); }
       if (t.id === 'imp-header') { imp.header = Math.max(0, (+t.value || 1) - 1); imp.map = PS.importers.autoMap(imp.result.sheets[imp.sheet][imp.header] || []); }
@@ -916,6 +921,11 @@ window.PS = window.PS || {};
       if (!b) return;
       if (b.dataset.iact === 'template') safe(() => PS.exporters.template());
       if (b.dataset.iact === 'back') renderImportStep1();
+      if (b.dataset.iact === 'paste') {
+        const r = PS.importers.readPasted($('#imp-paste').value);
+        if (r.kind === 'error') return renderImportStep1(r.message);
+        imp.file = { name: 'Pasted tasks' }; imp.result = r; imp.sheet = 'Pasted'; setupSheet(); renderImportStep2();
+      }
       if (b.dataset.iact === 'go') doImport();
     });
   }
@@ -996,6 +1006,11 @@ window.PS = window.PS || {};
     $$('#export-menu [data-export]').forEach((b) => b.addEventListener('click', () => {
       $('#export-menu').open = false;
       const k = b.dataset.export;
+      if (k === 'excel') {
+        toast('Building the Excel report…', 6000);
+        PS.report.excel(app.project, app.res).then(() => toast('Download started')).catch((e) => toast(e.message || 'The report could not be created'));
+        return;
+      }
       safe(() => {
         if (k === 'excel') PS.exporters.excel(app.project, app.res);
         if (k === 'csv') PS.exporters.csv(app.project, app.res);

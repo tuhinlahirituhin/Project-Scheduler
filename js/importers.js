@@ -31,11 +31,12 @@ PS.importers = (function () {
       }
       const reader = new FileReader();
       reader.onerror = () => resolve({ kind: 'error', message: 'The file could not be read.' });
-      if (ext === 'xml' || ext === 'json') {
+      if (ext === 'xml' || ext === 'json' || ext === 'xer') {
         reader.onload = () => {
           const text = String(reader.result);
           try {
             if (ext === 'json') resolve({ kind: 'project', project: parseBackup(text) });
+            else if (ext === 'xer') resolve({ kind: 'project', project: parseXER(text) });
             else resolve({ kind: 'project', project: parseMSPDI(text) });
           } catch (e) { resolve({ kind: 'error', message: e.message }); }
         };
@@ -254,11 +255,125 @@ PS.importers = (function () {
     };
   }
 
+  // ---------- Primavera P6 XER (tab-separated tables)
+  function parseXER(text) {
+    if (!/^ERMHDR/.test(text)) throw new Error('This is not a Primavera P6 .xer export.');
+    const tables = {};
+    let cur = null, fields = null;
+    text.split(/\r?\n/).forEach((line) => {
+      const parts = line.split('\t');
+      if (parts[0] === '%T') { cur = parts[1]; tables[cur] = []; fields = null; }
+      else if (parts[0] === '%F') fields = parts.slice(1);
+      else if (parts[0] === '%R' && cur && fields) {
+        const row = {};
+        fields.forEach((f, i) => { row[f] = parts[i + 1] == null ? '' : parts[i + 1]; });
+        tables[cur].push(row);
+      }
+    });
+    const T = (n) => tables[n] || [];
+    const tasksIn = T('TASK');
+    if (!tasksIn.length) throw new Error('No activities were found in this XER file.');
+    // pick the project with the most activities
+    const counts = {};
+    tasksIn.forEach((t) => { counts[t.proj_id] = (counts[t.proj_id] || 0) + 1; });
+    const projId = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    const proj = T('PROJECT').find((p) => p.proj_id === projId) || {};
+    const cal = T('CALENDAR').find((c) => c.default_flag === 'Y') || {};
+    const hpd = parseFloat(cal.day_hr_cnt) || 8;
+    const day = (s) => (s ? String(s).slice(0, 10) : '');
+
+    const wbs = T('PROJWBS').filter((w) => w.proj_id === projId);
+    const root = wbs.find((w) => w.proj_node_flag === 'Y');
+    const kids = new Map();
+    wbs.forEach((w) => { if (w !== root) { const k = w.parent_wbs_id; if (!kids.has(k)) kids.set(k, []); kids.get(k).push(w); } });
+    kids.forEach((l) => l.sort((a, b) => (+a.seq_num || 0) - (+b.seq_num || 0) || String(a.wbs_short_name).localeCompare(b.wbs_short_name)));
+    const actsByWbs = new Map();
+    tasksIn.filter((t) => t.proj_id === projId).forEach((t) => { if (!actsByWbs.has(t.wbs_id)) actsByWbs.set(t.wbs_id, []); actsByWbs.get(t.wbs_id).push(t); });
+    actsByWbs.forEach((l) => l.sort((a, b) => (a.target_start_date || '').localeCompare(b.target_start_date || '') || String(a.task_code).localeCompare(b.task_code)));
+
+    const rsrcName = new Map(T('RSRC').map((r) => [r.rsrc_id, r.rsrc_name || r.rsrc_short_name]));
+    const assign = new Map();
+    T('TASKRSRC').forEach((a) => {
+      if (!assign.has(a.task_id)) assign.set(a.task_id, { names: [], qty: 0 });
+      const x = assign.get(a.task_id);
+      if (rsrcName.has(a.rsrc_id)) x.names.push(rsrcName.get(a.rsrc_id));
+      x.qty += parseFloat(a.target_qty) || 0;
+    });
+
+    const out = [];
+    const idOf = new Map();
+    const addAct = (t, level) => {
+      const o = { id: out.length + 1, name: t.task_name || t.task_code, level, preds: [] };
+      if (t.task_code) o.notes = 'Activity ID ' + t.task_code;
+      const ms = /Mile/.test(t.task_type || '');
+      o.duration = ms ? 0 : Math.round(((parseFloat(t.target_drtn_hr_cnt) || 0) / hpd) * 2) / 2;
+      const pct = parseFloat(t.phys_complete_pct);
+      if (pct) o.pct = pct;
+      if (t.act_start_date) o.actualStart = day(t.act_start_date);
+      if (t.act_end_date) o.actualFinish = day(t.act_end_date);
+      if (t.status_code === 'TK_Complete') o.pct = 100;
+      const a = assign.get(t.task_id);
+      const work = parseFloat(t.target_work_qty) || (a ? a.qty : 0);
+      if (work) o.manhours = Math.round(work * 100) / 100;
+      if (a && a.names.length) o.resource = [...new Set(a.names)].join(', ');
+      if ((t.cstr_type === 'CS_MSOA' || t.cstr_type === 'CS_MSO') && t.cstr_date) o.constraintDate = day(t.cstr_date);
+      o._start = day(t.target_start_date || t.early_start_date);
+      idOf.set(t.task_id, o.id);
+      out.push(o);
+    };
+    const walk = (parentId, level) => {
+      (kids.get(parentId) || []).forEach((w) => {
+        out.push({ id: out.length + 1, name: w.wbs_name || w.wbs_short_name, level, preds: [] });
+        (actsByWbs.get(w.wbs_id) || []).forEach((t) => addAct(t, level + 1));
+        walk(w.wbs_id, level + 1);
+      });
+    };
+    if (root) (actsByWbs.get(root.wbs_id) || []).forEach((t) => addAct(t, 0));
+    walk(root ? root.wbs_id : '', 0);
+    // activities whose WBS was not found
+    tasksIn.filter((t) => t.proj_id === projId && !idOf.has(t.task_id)).forEach((t) => addAct(t, 0));
+    // drop empty WBS nodes (no activities underneath)
+    const keep = out.filter((o, i) => o.duration !== undefined || (out[i + 1] && out[i + 1].level > o.level));
+
+    const typeMap = { PR_FS: 'FS', PR_SS: 'SS', PR_FF: 'FF', PR_SF: 'SF' };
+    T('TASKPRED').forEach((p) => {
+      const s = idOf.get(p.task_id), q = idOf.get(p.pred_task_id);
+      if (!s || !q) return;
+      const succ = out[s - 1];
+      succ.preds.push({ id: q, type: typeMap[p.pred_type] || 'FS', lag: Math.round(((parseFloat(p.lag_hr_cnt) || 0) / hpd) * 2) / 2 });
+    });
+    // renumber ids after dropping empty WBS nodes
+    const remap = new Map(keep.map((o, i) => [o.id, i + 1]));
+    keep.forEach((o) => { o.id = remap.get(o.id); o.preds = o.preds.filter((p) => remap.has(p.id)).map((p) => Object.assign(p, { id: remap.get(p.id) })); });
+    const projStart = day(proj.plan_start_date || proj.last_recalc_date) || keep.map((o) => o._start).filter(Boolean).sort()[0] || U.todayISO();
+    keep.forEach((o) => {
+      if (o.duration !== undefined && !o.preds.length && !o.constraintDate && !o.actualStart && o._start && o._start > projStart) o.constraintDate = o._start;
+      delete o._start;
+    });
+    // fix levels after removing nodes
+    keep.forEach((o, i) => { const prev = i ? keep[i - 1].level : -1; if (o.level > prev + 1) o.level = prev + 1; });
+    const sd = day(proj.last_recalc_date);
+    return {
+      name: proj.proj_short_name || 'Imported Primavera schedule',
+      startDate: projStart,
+      statusDate: sd || undefined,
+      calendar: { workDays: [1, 2, 3, 4, 5], hoursPerDay: hpd, holidays: [] },
+      tasks: keep,
+    };
+  }
+
   function parseBackup(text) {
     const p = JSON.parse(text);
     if (!p || !Array.isArray(p.tasks)) throw new Error('This file is not a Planline project backup.');
     return p;
   }
 
-  return { FIELDS, readFile, detectHeader, autoMap, buildTasks, parseMSPDI, parseBackup };
+    /* Rows pasted from Excel, Google Sheets or a web table (tab separated). */
+  function readPasted(text) {
+    const rows = String(text || '').replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '').map((l) => l.split('\t'));
+    if (rows.length < 2) return { kind: 'error', message: 'Paste at least a header row and one task row.' };
+    return { kind: 'table', sheets: { Pasted: rows }, sheetNames: ['Pasted'] };
+  }
+
+  return { FIELDS, readFile, readPasted, detectHeader, autoMap, buildTasks, parseMSPDI, parseXER, parseBackup };
 })();
