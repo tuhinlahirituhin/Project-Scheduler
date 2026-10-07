@@ -196,10 +196,10 @@ PS.report = (function () {
       const id = wb.addImage({ base64: imgs[key], extension: 'png' });
       ws.addImage(id, { tl: { col, row }, ext: { width: w, height: h } });
     };
-    place('scurve', 0, 7.4, 840, 380);
-    place('status', 10.4, 7.4, 440, 380);
-    place('phase', 0, 27.6, 640, 360);
-    place('hist', 8, 27.6, 640, 360);
+    place('scurve', 0, 7, 840, 380);
+    place('status', 10, 7, 440, 380);
+    place('phase', 0, 27, 640, 360);
+    place('hist', 8, 27, 640, 360);
 
     let r = 47;
     ws.getCell(r, 1).value = 'Needs attention';
@@ -324,7 +324,7 @@ PS.report = (function () {
       });
       if (t.level > 0 && t.level <= 7) row.outlineLevel = t.level;
     });
-    ws.properties.outlineProperties = { summaryBelow: false };
+    ws.properties.outlineLevelRow = Math.min(7, Math.max(0, ...project.tasks.map((t) => t.level)));
     ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 8, printTitlesRow: '4:5' };
   }
 
@@ -360,16 +360,13 @@ PS.report = (function () {
       { header: 'Notes', width: 30, value: (t) => t.notes || null },
     ];
     // data rows start at row 4 (header at row 3)
-    const end = table(ws, 3, cols, list, {
+    table(ws, 3, cols, list, {
       rowStyle: (row, t) => {
         if (t._summary) row.eachCell({ includeEmpty: true }, (c, n) => { if (n <= cols.length && n !== 18) { c.fill = fill('#eef1f3'); c.font = Object.assign({}, c.font, { bold: true }); } });
         if (t.level > 0 && t.level <= 7 && name === 'Schedule') row.outlineLevel = t.level;
       },
     });
-    if (list.length) {
-      ws.addConditionalFormatting({ ref: `M4:M${end - 1}`, rules: [{ type: 'dataBar', minLength: 0, maxLength: 100, cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: 1 }], color: { argb: argb('#86b6ef') }, gradient: false }] });
-    }
-    ws.properties.outlineProperties = { summaryBelow: false };
+    if (name === 'Schedule') ws.properties.outlineLevelRow = Math.min(7, Math.max(0, ...list.map((t) => t.level)));
     ws.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, printTitlesRow: '3:3' };
   }
 
