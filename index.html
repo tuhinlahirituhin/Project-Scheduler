@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planline Scheduler</title>
+<meta name="description" content="Free online project scheduler: WBS, Gantt chart, critical path, man-hour norms, Excel and MS Project import/export, and a progress dashboard. Runs in your browser; your data never leaves your device.">
+<meta name="theme-color" content="#0b7470">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-diamond" viewBox="0 0 16 16"><path d="M8 2.5 13.5 8 8 13.5 2.5 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-indent" viewBox="0 0 16 16"><path d="M2 3h12M7 6.5h7M7 9.5h7M2 13h12M2 6l3 2-3 2" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-outdent" viewBox="0 0 16 16"><path d="M2 3h12M7 6.5h7M7 9.5h7M2 13h12M5 6 2 8l3 2" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 3v10M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-link" viewBox="0 0 16 16"><path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.8 2.8 0 0 1 4 4L11 8.5M9 11.5l-1.2 1.2a2.8 2.8 0 0 1-4-4L5 7.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-unlink" viewBox="0 0 16 16"><path d="M7 4.5l1.2-1.2a2.8 2.8 0 0 1 4 4L11 8.5M9 11.5l-1.2 1.2a2.8 2.8 0 0 1-4-4L5 7.5M2.5 2.5l11 11" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 16 16"><path d="M5.5 3 2.5 6l3 3M3 6h6.5a4 4 0 0 1 0 8H7" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 16 16"><path d="M10.5 3l3 3-3 3M13 6H6.5a4 4 0 0 0 0 8H9" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.5M5 5.5l3-3 3 3M3 10v2.5h10V10" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v8M5 7.5l3 3 3-3M3 10v2.5h10V10" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1v.4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="8" cy="11.6" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5l3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-image" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="m3 12 3.5-4 2.5 3 1.5-1.5L13 12" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 16 16"><path d="M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><rect x="6" y="8" width="12" height="4" rx="2" fill="var(--surface)"/><rect x="12" y="14" width="14" height="4" rx="2" fill="var(--surface)"/><rect x="9" y="20" width="9" height="4" rx="2" fill="var(--surface)" opacity=".7"/></svg>
+    <span id="app-name">Planline</span> <small>Project scheduler</small>
+  </div>
+  <div class="proj-picker">
+    <label for="proj-select" class="eyebrow hide-sm">Project</label>
+    <select id="proj-select" aria-label="Current project"></select>
+    <button class="btn ghost" id="btn-projects" type="button">Manage</button>
+  </div>
+  <span class="saved" id="saved" aria-live="polite">Saved in this browser</span>
+  <span class="spacer"></span>
+  <button class="btn" id="btn-import" type="button"><svg><use href="#i-upload"/></svg>Import</button>
+  <details class="menu" id="export-menu">
+    <summary class="btn primary"><svg><use href="#i-download"/></svg>Export</summary>
+    <div class="menu-list" role="menu">
+      <button type="button" data-export="excel"><span>Excel report (.xlsx)</span><small>Summary, schedule, critical path, weekly man-hours, phases</small></button>
+      <button type="button" data-export="csv"><span>Schedule as CSV</span><small>Opens in any spreadsheet app</small></button>
+      <button type="button" data-export="mspdi"><span>MS Project XML</span><small>Open in MS Project, ProjectLibre or Primavera</small></button>
+      <hr>
+      <button type="button" data-export="backup"><span>Project backup (.json)</span><small>Keep a copy or move it to another computer</small></button>
+      <button type="button" data-export="template"><span>Blank import template (.xlsx)</span><small>Fill in your WBS and import it back</small></button>
+    </div>
+  </details>
+  <button class="btn icon ghost" id="btn-help" type="button" aria-label="Help"><svg><use href="#i-help"/></svg></button>
+  <button class="btn icon ghost" id="btn-theme" type="button" aria-label="Switch light or dark theme"><svg><use href="#i-moon"/></svg></button>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Views">
+  <button role="tab" data-view="schedule" aria-selected="true">Schedule</button>
+  <button role="tab" data-view="dashboard" aria-selected="false">Dashboard</button>
+  <button role="tab" data-view="norms" aria-selected="false">Man-hour norms</button>
+  <button role="tab" data-view="settings" aria-selected="false">Project settings</button>
+</nav>
+
+<div class="ad-slot" id="ad-top" hidden></div>
+
+<main>
+  <!-- SCHEDULE -->
+  <section class="view" id="view-schedule">
+    <div class="toolbar" role="toolbar" aria-label="Task tools">
+      <button class="btn" id="tb-add" type="button" title="Add task (Insert)"><svg><use href="#i-plus"/></svg>Task</button>
+      <button class="btn" id="tb-ms" type="button" title="Add milestone"><svg><use href="#i-diamond"/></svg>Milestone</button>
+      <span class="sep"></span>
+      <button class="btn icon" id="tb-outdent" type="button" title="Outdent (Alt+←)" aria-label="Outdent"><svg><use href="#i-outdent"/></svg></button>
+      <button class="btn icon" id="tb-indent" type="button" title="Indent to make a sub-activity (Alt+→)" aria-label="Indent"><svg><use href="#i-indent"/></svg></button>
+      <button class="btn icon" id="tb-up" type="button" title="Move up (Alt+↑)" aria-label="Move up"><svg><use href="#i-up"/></svg></button>
+      <button class="btn icon" id="tb-down" type="button" title="Move down (Alt+↓)" aria-label="Move down"><svg><use href="#i-down"/></svg></button>
+      <span class="sep"></span>
+      <button class="btn" id="tb-link" type="button" title="Link selected tasks finish-to-start in order"><svg><use href="#i-link"/></svg>Link</button>
+      <button class="btn icon" id="tb-unlink" type="button" title="Remove links between selected tasks" aria-label="Unlink"><svg><use href="#i-unlink"/></svg></button>
+      <button class="btn icon danger" id="tb-del" type="button" title="Delete selected (Delete)" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
+      <span class="sep"></span>
+      <button class="btn icon" id="tb-undo" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg><use href="#i-undo"/></svg></button>
+      <button class="btn icon" id="tb-redo" type="button" title="Redo (Ctrl+Y)" aria-label="Redo"><svg><use href="#i-redo"/></svg></button>
+      <span class="spacer"></span>
+      <input type="search" id="tb-filter" placeholder="Filter tasks" aria-label="Filter tasks">
+      <div class="btn-group" role="group" aria-label="Timeline zoom">
+        <button class="btn" type="button" data-zoom="day">Day</button>
+        <button class="btn" type="button" data-zoom="week" aria-pressed="true">Week</button>
+        <button class="btn" type="button" data-zoom="month">Month</button>
+      </div>
+      <button class="btn" id="tb-today" type="button" title="Scroll timeline to the status date"><svg><use href="#i-flag"/></svg><span class="hide-sm">Status date</span></button>
+      <button class="btn icon" id="tb-panel" type="button" title="Show or hide task details" aria-label="Task details" aria-pressed="true"><svg><use href="#i-panel"/></svg></button>
+    </div>
+    <div class="errbar" id="errbar" hidden></div>
+    <div class="workarea">
+      <div class="split" id="split">
+        <div class="pane grid-pane" id="grid-pane"><table class="tasks" id="grid"></table></div>
+        <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize table"></div>
+        <div class="pane gantt-pane" id="gantt-pane">
+          <div class="gantt-head" id="gantt-head"></div>
+          <div class="gantt-body" id="gantt-body"></div>
+        </div>
+      </div>
+      <aside class="details" id="details" aria-label="Task details"></aside>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard" hidden>
+    <div class="page" id="dash"></div>
+  </section>
+
+  <!-- NORMS -->
+  <section class="view" id="view-norms" hidden>
+    <div class="page" id="norms"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings" hidden>
+    <div class="page" id="settings"></div>
+  </section>
+</main>
+
+<div class="ad-slot" id="ad-bottom" hidden></div>
+<footer class="sitefoot">
+  <span>Your projects are stored only in this browser. Export a backup to keep a copy.</span>
+  <span id="foot-links"></span>
+</footer>
+
+<div class="g-tip" id="gtip" hidden></div>
+<div id="toast" role="status" hidden></div>
+
+<dialog id="dlg-import" aria-label="Import tasks"><form method="dialog" class="dlg" id="import-body"></form></dialog>
+<dialog id="dlg-confirm" aria-label="Confirm"><form method="dialog" class="dlg" id="confirm-body"></form></dialog>
+<dialog id="dlg-projects" aria-label="Projects"><form method="dialog" class="dlg" id="projects-body"></form></dialog>
+<dialog id="dlg-help" aria-label="Help"><form method="dialog" class="dlg" id="help-body"></form></dialog>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/norms.js"></script>
+<script src="js/schedule.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/sample.js"></script>
+<script src="js/importers.js"></script>
+<script src="js/exporters.js"></script>
+<script src="js/gantt.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
