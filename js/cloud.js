@@ -300,6 +300,8 @@ window.PS = window.PS || {};
       btn.title = S.user ? 'Signed in as ' + (S.user.email || '') : 'Sign in to save your projects to your account';
       btn.classList.toggle('signed-in', !!S.user);
     }
+    // the welcome window can open before a saved sign-in is restored
+    document.querySelectorAll('[data-wact="signin"]').forEach((b) => { b.hidden = !!S.user; });
     const foot = $('#foot-store');
     if (foot) foot.textContent = S.user ? 'Your projects are saved in this browser and to your account.' : 'Your projects are stored only in this browser. Export a backup or sign in to keep a copy.';
     const el = $('#saved');
