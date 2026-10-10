@@ -27,7 +27,7 @@ ISSUES_URL = 'https://github.com/tuhinlahirituhin/Project-Scheduler/issues'
 # Google AdSense publisher id ('ca-pub-...'). Setting it adds the AdSense site-verification tag and code to
 # every page and writes ads.txt, which AdSense needs while it reviews the site. Ad units are then switched
 # on separately in js/config.js once the account is approved.
-ADSENSE_CLIENT = ''
+ADSENSE_CLIENT = 'ca-pub-7720514389049420'
 # Public contact address shown on the contact page, e.g. a Cloudflare Email Routing alias. Empty hides it.
 CONTACT_EMAIL = ''
 
