@@ -502,3 +502,16 @@ table.pgrid tfoot tr.plan td { bottom: 0; color: var(--s7); }
   .kpi-chip { min-width: 0; flex: 1; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Home link in the header, example-project notice and the first-visit welcome dialog. */
+a.brand { color: inherit; text-decoration: none; }
+.samplebar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 8px 16px; font-size: 13px; background: color-mix(in srgb, var(--s1) 12%, var(--surface)); border-bottom: 1px solid color-mix(in srgb, var(--s1) 30%, var(--line)); }
+.samplebar span { flex: 1 1 280px; }
+.samplebar[hidden] { display: none; }
+.welcome { max-width: 560px; }
+.welcome p { margin: 0 0 14px; color: var(--ink-2); }
+.welcome-opts { display: grid; gap: 10px; margin: 6px 0 4px; }
+.welcome-opts button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; transition: border-color .15s, transform .15s; }
+.welcome-opts button:hover, .welcome-opts button:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
+.welcome-opts b { font-size: 15px; }
+.welcome-opts small { color: var(--ink-3); font-size: 12.5px; }

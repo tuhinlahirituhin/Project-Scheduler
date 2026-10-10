@@ -20,13 +20,15 @@ PS.report = (function () {
   const FONT = 'Calibri';
   const dateOf = (iso) => (iso ? new Date(iso + 'T00:00:00Z') : null);
 
+  // Resolve the library next to this script, so the report works from any page that loads it.
+  const VENDOR = ((document.currentScript && document.currentScript.src) || '').replace(/js\/report\.js(\?.*)?$/, '') + 'vendor/';
   let loading = null;
   function loadExcelJS() {
     if (window.ExcelJS) return Promise.resolve();
     if (loading) return loading;
     loading = new Promise((res, rej) => {
       const s = document.createElement('script');
-      s.src = 'vendor/exceljs.min.js';
+      s.src = VENDOR + 'exceljs.min.js';
       s.onload = () => res();
       s.onerror = () => { loading = null; rej(new Error('The Excel report library could not load. Check your connection and try again.')); };
       document.head.appendChild(s);

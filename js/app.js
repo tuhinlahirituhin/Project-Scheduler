@@ -369,6 +369,7 @@ window.PS = window.PS || {};
     const lk = isLocked();
     document.body.classList.toggle('locked', lk);
     $('#lockbar').hidden = !lk || ui.view !== 'schedule';
+    $('#samplebar').hidden = !app.project.isSample;
     const lb = $('#tb-lock');
     lb.setAttribute('aria-pressed', lk ? 'true' : 'false');
     lb.title = lk ? 'Unlock the schedule' : 'Lock the schedule so it cannot be changed';
@@ -1367,6 +1368,8 @@ window.PS = window.PS || {};
     };
     $('#tb-lock').addEventListener('click', toggleLock);
     $('#lockbar-unlock').addEventListener('click', toggleLock);
+    $('#samplebar-new').addEventListener('click', () => { openProject(newProject('Untitled project')); toast('New project created. Add tasks or import a file.'); });
+    $('#samplebar-import').addEventListener('click', () => { imp.mode = 'new'; openImport(); });
     $('#tb-unlink').addEventListener('click', unlinkSelected);
     $('#tb-del').addEventListener('click', deleteSelected);
     $('#tb-undo').addEventListener('click', undo);
@@ -1489,13 +1492,44 @@ window.PS = window.PS || {};
     const cur = U.store.get('ps.current', null);
     if (cur) p = loadProject(cur);
     if (!p && list.length) p = loadProject(list[0].id);
-    if (!p) p = PS.makeSampleProject();
+    // app/?example opens the example project (reusing one already saved), e.g. from the home page.
+    const wantExample = /[?&]example\b/.test(location.search);
+    if (wantExample) {
+      p = list.map((x) => loadProject(x.id)).find((x) => x && x.isSample) || PS.makeSampleProject();
+      try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* sandboxed */ }
+    }
+    // First visit: an empty project that is only stored once the visitor changes something.
+    const firstVisit = !p;
+    if (!p) p = newProject('My first project');
     const hv = location.hash.slice(1);
     if (['schedule', 'progress', 'dashboard', 'norms', 'settings'].includes(hv)) ui.view = hv;
     app.project = normalise(p);
-    recompute(); save();
+    recompute();
+    if (!firstVisit) save();
     setView(ui.view);
     requestAnimationFrame(() => PS.gantt.scrollTo($('#gantt-pane'), app.res.statusISO));
+    if (firstVisit) showWelcome();
+  }
+
+  function showWelcome() {
+    $('#welcome-body').innerHTML = `<div class="welcome">
+      <h2>Welcome to Planline</h2>
+      <p>Plan a project with a WBS, logic links, critical path, man-hours and progress. Everything is saved in this browser only. How would you like to start?</p>
+      <div class="welcome-opts">
+        <button type="button" data-wact="blank"><b>Start a blank project</b><small>Type or paste your activities and link them</small></button>
+        <button type="button" data-wact="import"><b>Import a schedule file</b><small>Excel or CSV, MS Project XML, Primavera P6 .xer, or a Planline backup</small></button>
+        <button type="button" data-wact="example"><b>Explore an example project</b><small>A small warehouse job with made-up data, to see every feature</small></button>
+      </div></div>`;
+    const dlg = $('#dlg-welcome');
+    $('#welcome-body').onclick = (e) => {
+      const b = e.target.closest('[data-wact]');
+      if (!b) return;
+      dlg.close();
+      if (b.dataset.wact === 'import') { imp.mode = 'new'; openImport(); }
+      if (b.dataset.wact === 'example') openProject(PS.makeSampleProject());
+      if (b.dataset.wact === 'blank') toast('Click + Task, or paste rows from a spreadsheet, to start.');
+    };
+    dlg.showModal();
   }
 
   document.addEventListener('DOMContentLoaded', init);

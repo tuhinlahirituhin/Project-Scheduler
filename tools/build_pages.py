@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates Planline's guide pages, sitemap.xml, robots.txt and the SEO tags in index.html.
+"""Generates Planline's home page, guide pages, sitemap.xml, robots.txt and the SEO tags in app/index.html.
 
 The site stays static: the generated HTML is committed and served as is. Re-run this script only
 after changing SITE_URL (for example when moving to a custom domain) or editing page text here:
@@ -15,7 +15,7 @@ import subprocess
 # The one place the public address lives. Change it here when a custom domain is set up.
 SITE_URL = 'https://planline.app/'
 SITE_NAME = 'Planline'
-UPDATED = '2026-10-07'
+UPDATED = '2026-10-10'
 # Paste the content="..." value from Google Search Console's "HTML tag" verification here.
 GOOGLE_VERIFICATION = 'T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw'
 BING_VERIFICATION = ''
@@ -70,55 +70,36 @@ def social_tags(title, desc, page_url):
 
 
 # ---------------------------------------------------------------------------- page shell
-def page(p, depth):
+def links(depth):
     up = '../' * depth
-    app = up + 'index.html'
-    crumbs = ''
-    trail = [{'@type': 'ListItem', 'position': 1, 'name': 'Planline', 'item': SITE_URL}]
-    if p['path']:
-        if p.get('parent'):
-            crumbs = f'<p class="crumbs"><a href="{up}index.html">Planline</a> › <a href="{up}guides/">Guides</a> › {esc(p["crumb"])}</p>'
-            trail.append({'@type': 'ListItem', 'position': 2, 'name': 'Guides', 'item': url('guides/')})
-        else:
-            crumbs = f'<p class="crumbs"><a href="{up}index.html">Planline</a> › {esc(p["crumb"])}</p>'
-        trail.append({'@type': 'ListItem', 'position': len(trail) + 1, 'name': p['crumb'], 'item': url(p['path'])})
-    schema = [{'@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': trail}]
-    if p.get('article'):
-        schema.append({'@context': 'https://schema.org', '@type': 'Article', 'headline': p['h1'], 'description': p['desc'],
-                       'dateModified': UPDATED, 'mainEntityOfPage': url(p['path']),
-                       'publisher': {'@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL}})
-    if p.get('faq'):
-        schema.append({'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': [
-            {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub('<[^>]+>', '', a)}} for q, a in p['faq']]})
-    faq = ''
-    if p.get('faq'):
-        faq = '<h2 id="faq">Frequently asked questions</h2>\n<div class="faq">\n' + '\n'.join(
-            f'<details><summary>{esc(q)}</summary><p>{a}</p></details>' for q, a in p['faq']) + '\n</div>\n'
-    cta = '' if p.get('no_cta') else f'''<div class="cta-box">
-<h2>Try it on your own schedule</h2>
-<p>Planline is free, needs no sign-up and keeps your data in your browser. Start from the sample project or import your own file.</p>
-<p><a class="btn" href="{app}">Open the free scheduler</a></p>
-</div>'''
-    body = p['body'].replace('{APP}', app).replace('{UP}', up)
+    return up, (up or './'), up + 'app/'
+
+
+def head(title, desc, page_url, up, schema):
     return f'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{esc(p["title"])}</title>
-<meta name="description" content="{esc(p["desc"])}">
+<title>{esc(title)}</title>
+<meta name="description" content="{esc(desc)}">
 <meta name="theme-color" content="#0b7470">
-{social_tags(p["title"], p["desc"], url(p["path"]))}{head_tags()}<link rel="icon" href="{FAVICON}">
+{social_tags(title, desc, page_url)}{head_tags()}<link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <link rel="stylesheet" href="{up}css/site.css">
 <script>try{{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}}catch(e){{}}</script>
-{chr(10).join(ld(s) for s in schema)}
+{chr(10).join(ld(x) for x in schema)}
 </head>
 <body>
-<header class="site-head"><div class="wrap">
-<a class="logo" href="{app}">{LOGO}Planline</a>
+'''
+
+
+def site_header(depth):
+    up, home, app = links(depth)
+    return f'''<header class="site-head"><div class="wrap">
+<a class="logo" href="{home}">{LOGO}Planline</a>
 <nav class="site-nav" aria-label="Site">
 <a class="hide-sm" href="{up}free-epcm-scheduling-software/">EPCM scheduling</a>
 <a class="hide-sm" href="{up}man-hour-norms/">Man-hour norms</a>
@@ -126,18 +107,13 @@ def page(p, depth):
 <a class="btn" href="{app}">Open scheduler</a>
 </nav>
 </div></header>
-<section class="hero"><div class="wrap">
-{crumbs}
-<h1>{esc(p["h1"])}</h1>
-<p class="lede">{p["lede"]}</p>
-{'' if p.get('no_hero_cta') else f'<div class="cta-row"><a class="btn" href="{app}">Open the free scheduler</a><span class="cta-note">No sign-up, nothing to install. Your data stays on your device.</span></div>'}
-</div></section>
-<main class="wrap"><div class="article">
-{body}
-<div class="ad-slot" hidden></div>
-{faq}{cta}
-</div></main>
-<footer class="site-foot"><div class="wrap">
+'''
+
+
+def site_footer(depth):
+    up, home, app = links(depth)
+    return f'''<footer class="site-foot"><div class="wrap">
+<a href="{home}">Home</a>
 <a href="{app}">Scheduler</a>
 <a href="{up}guides/">Guides</a>
 <a href="{up}man-hour-norms/">Man-hour norms</a>
@@ -150,6 +126,55 @@ def page(p, depth):
 </body>
 </html>
 '''
+
+
+def page(p, depth):
+    up, home, app = links(depth)
+    crumbs = ''
+    trail = [{'@type': 'ListItem', 'position': 1, 'name': 'Planline', 'item': SITE_URL}]
+    if p['path']:
+        if p.get('parent'):
+            crumbs = f'<p class="crumbs"><a href="{home}">Planline</a> › <a href="{up}guides/">Guides</a> › {esc(p["crumb"])}</p>'
+            trail.append({'@type': 'ListItem', 'position': 2, 'name': 'Guides', 'item': url('guides/')})
+        else:
+            crumbs = f'<p class="crumbs"><a href="{home}">Planline</a> › {esc(p["crumb"])}</p>'
+        trail.append({'@type': 'ListItem', 'position': len(trail) + 1, 'name': p['crumb'], 'item': url(p['path'])})
+    schema = [{'@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': trail}]
+    if p.get('article'):
+        schema.append({'@context': 'https://schema.org', '@type': 'Article', 'headline': p['h1'], 'description': p['desc'],
+                       'dateModified': UPDATED, 'mainEntityOfPage': url(p['path']),
+                       'publisher': {'@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL}})
+    if p.get('faq'):
+        schema.append(faq_ld(p['faq']))
+    faq = faq_html(p['faq']) if p.get('faq') else ''
+    cta = '' if p.get('no_cta') else f'''<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free, needs no sign-up and keeps your data in your browser. Start a blank project, import your own file, or look around the example project first.</p>
+<p><a class="btn" href="{app}">Open the free scheduler</a></p>
+</div>'''
+    body = p['body'].replace('{APP}', app).replace('{UP}', up)
+    return head(p['title'], p['desc'], url(p['path']), up, schema) + site_header(depth) + f'''<section class="hero"><div class="wrap">
+{crumbs}
+<h1>{esc(p["h1"])}</h1>
+<p class="lede">{p["lede"]}</p>
+{'' if p.get('no_hero_cta') else f'<div class="cta-row"><a class="btn" href="{app}">Open the free scheduler</a><span class="cta-note">No sign-up, nothing to install. Your data stays on your device.</span></div>'}
+</div></section>
+<main class="wrap"><div class="article">
+{body}
+<div class="ad-slot" hidden></div>
+{faq}{cta}
+</div></main>
+''' + site_footer(depth)
+
+
+def faq_ld(items):
+    return {'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': [
+        {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub('<[^>]+>', '', a)}} for q, a in items]}
+
+
+def faq_html(items):
+    return '<h2 id="faq">Frequently asked questions</h2>\n<div class="faq">\n' + '\n'.join(
+        f'<details><summary>{esc(q)}</summary><p>{a}</p></details>' for q, a in items) + '\n</div>\n'
 
 
 # ---------------------------------------------------------------------------- norms table
@@ -209,7 +234,7 @@ def pages(norms):
 
 <h2>A typical EPCM workflow in Planline</h2>
 <ol class="steps">
-<li><b>Import or build the schedule.</b> Bring in a P6 .xer, an MS Project XML file or any Excel activity list, or start from the sample EPC project.</li>
+<li><b>Import or build the schedule.</b> Bring in a P6 .xer, an MS Project XML file or any Excel activity list, or start from a blank project.</li>
 <li><b>Load quantities.</b> Give each construction activity a unit of measure and scope quantity, such as inch-dia of welding, tonnes of steel or metres of cable.</li>
 <li><b>Apply norms.</b> Pick a norm from the library (for example field butt welds or cable pulling) and a productivity factor for your site. Man-hours and, if you like, durations follow automatically.</li>
 <li><b>Baseline and lock.</b> Save a baseline and lock the schedule so the approved plan cannot be changed by accident.</li>
@@ -263,7 +288,7 @@ def pages(norms):
         body='''
 <h2>Make a Gantt chart in four steps</h2>
 <ol class="steps">
-<li><b>Open the scheduler</b> and pick <i>New project</i>, or keep the sample project to see how it works.</li>
+<li><b>Open the scheduler</b> and choose <i>Start a blank project</i>, or explore the example project first to see how it works.</li>
 <li><b>Add tasks.</b> Type names and durations, or paste rows straight from a spreadsheet. Use indent and outdent to group tasks under summary rows.</li>
 <li><b>Link tasks.</b> Type predecessors like <code>3</code>, <code>5SS+2d</code> or <code>7FF</code>. Dates move automatically and the critical path turns red.</li>
 <li><b>Export.</b> Download an Excel workbook with a cell-based Gantt chart, or a PNG of any dashboard chart, or an MS Project XML file.</li>
@@ -554,34 +579,163 @@ def pages(norms):
     return P
 
 
-# ---------------------------------------------------------------------------- index.html head
-def patch_index(norms_count):
-    title = 'Planline: Free Online Project Scheduler for EPC & EPCM (Gantt, CPM, Man-hours)'
-    desc = ('Free online project scheduler for EPC, EPCM and construction: WBS, Gantt chart, critical path, '
-            f'{norms_count} man-hour norms, weighted progress and S-curves, P6 .xer and MS Project import, Excel reports. '
-            'No sign-up; your data stays in your browser.')
-    app_ld = {
-        '@context': 'https://schema.org', '@type': 'WebApplication', 'name': SITE_NAME, 'url': SITE_URL,
+# ---------------------------------------------------------------------------- home page
+APP_DESC_TAIL = 'No sign-up; your data stays in your browser.'
+
+
+def app_desc(n_norms):
+    return ('Free online project scheduler for EPC, EPCM and construction: WBS, Gantt chart, critical path, '
+            f'{n_norms} man-hour norms, weighted progress and S-curves, P6 .xer and MS Project import, Excel reports. ' + APP_DESC_TAIL)
+
+
+def app_ld(n_norms):
+    return {
+        '@context': 'https://schema.org', '@type': 'WebApplication', 'name': SITE_NAME, 'url': url('app/'),
         'applicationCategory': 'BusinessApplication', 'applicationSubCategory': 'Project scheduling',
         'operatingSystem': 'Any (web browser)', 'browserRequirements': 'Requires JavaScript',
-        'description': desc, 'image': url('img/og-image.png'),
+        'description': app_desc(n_norms), 'image': url('img/og-image.png'),
         'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'USD'},
         'featureList': ['WBS with unlimited levels', 'Critical path method with FS, SS, FF, SF links and lag',
-                        'Gantt chart with baseline and progress', f'{norms_count} indicative man-hour norms',
+                        'Gantt chart with baseline and progress', f'{n_norms} indicative man-hour norms',
                         'Quantity-based and weighted progress measurement', 'S-curve dashboard',
                         'Import Primavera P6 XER, MS Project XML, Excel and CSV', 'Export Excel report, CSV and MS Project XML'],
     }
-    site_ld = {'@context': 'https://schema.org', '@type': 'WebSite', 'name': SITE_NAME, 'url': SITE_URL}
+
+
+ICONS = {
+    'wbs': '<path d="M4 5h7M8 10h9M8 15h9M8 20h6M4 5v15" />',
+    'logic': '<rect x="3" y="4" width="8" height="5" rx="1.5"/><rect x="13" y="15" width="8" height="5" rx="1.5"/><path d="M7 9v8.5h6"/>',
+    'mh': '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
+    'progress': '<path d="M3 20c5 0 6-14 18-16"/><path d="M3 20h18"/>',
+    'report': '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+    'swap': '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+    'free': '<path d="M5 12l4.5 4.5L19 7"/>',
+    'lock': '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    'file': '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+    'xls': '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M4 14h16M10 4v16"/>',
+}
+
+
+def icon(name):
+    return (f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>')
+
+
+def home(norms, P):
+    n_norms = len(norms)
+    og = sum(1 for n in norms if n['sector'].startswith('Oil'))
+    og_cats = sorted({n['cat'] for n in norms if n['sector'].startswith('Oil')})
+    title = 'Planline: Free Online Project Scheduler for EPC & EPCM (Gantt, CPM, Man-hours)'
+    desc = app_desc(n_norms)
+    up, home_href, app = links(0)
+    guides = [p for p in P if p.get('parent')]
+    faq = [
+        ('Is Planline really free?', 'Yes. There is no trial, licence or account. The site may show ads to cover its costs.'),
+        ('Where are my schedules saved?', 'Only in your own browser on your own device. Nothing is uploaded. Use Export › Project backup to keep a copy or move it to another computer.'),
+        ('Can I open Primavera P6 and MS Project files?', 'Yes. Import a P6 .xer file or an MS Project XML file. Native .mpp files must first be saved as XML from MS Project or the free ProjectLibre.'),
+        ('Does it work on a phone?', 'It works in any modern browser. A laptop or tablet is more comfortable for editing a schedule; a phone is fine for checking progress.'),
+        ('Who is it for?', 'Planners, project controls engineers, package and site engineers, subcontractors and students working on EPC, EPCM, oil and gas, energy and construction projects.'),
+    ]
+    feats = [
+        ('wbs', 'WBS and activities', 'Unlimited levels with summary roll-ups and WBS codes. Type, paste from Excel or import.'),
+        ('logic', 'Logic and critical path', 'FS, SS, FF and SF links with lead or lag, working calendar, holidays, total float.'),
+        ('mh', 'Man-hour estimating', f'Quantity × norm × productivity factor, from {n_norms} editable norms or your own.'),
+        ('progress', 'Weighted progress', 'Record quantities by day, week or month. Weightage comes from man-hours.'),
+        ('report', 'Dashboard and S-curves', 'KPI tiles, planned vs actual S-curve, man-hour histogram and a chart builder.'),
+        ('swap', 'Import and export', 'P6 .xer, MS Project XML, Excel and CSV in. Excel report, CSV and MS Project XML out.'),
+    ]
+    feat_html = '\n'.join(f'<div class="feat">{icon(i)}<h3>{esc(h)}</h3><p>{esc(t)}</p></div>' for i, h, t in feats)
+    guide_html = '\n'.join(f'<a class="card" href="{p["path"]}"><h3>{esc(p["crumb"])}</h3><p>{esc(p["desc"])}</p></a>' for p in guides)
+    cats = ', '.join(c.lower() for c in og_cats[:9])
+    schema = [app_ld(n_norms), {'@context': 'https://schema.org', '@type': 'WebSite', 'name': SITE_NAME, 'url': SITE_URL}, faq_ld(faq)]
+    # Old links to the scheduler (planline.app/#dashboard and so on) open the app.
+    redirect = ("<script>if(/^#(schedule|progress|dashboard|norms|settings)$/.test(location.hash))"
+                "location.replace('app/'+location.hash)</script>\n")
+    return head(title, desc, SITE_URL, up, schema).replace('</head>', redirect + '</head>') + site_header(0) + f'''<section class="home-hero"><div class="wrap">
+<div class="hero-copy">
+<p class="eyebrow">Free project scheduler · No sign-up</p>
+<h1>Plan, schedule and track EPC projects in your browser</h1>
+<p class="lede">Build the WBS, link activities, find the critical path, estimate man-hours from norms and measure weighted progress with S-curves. Built for planners and project controls in oil &amp; gas, energy and construction.</p>
+<div class="cta-row"><a class="btn big" href="{app}">Open the scheduler</a><a class="btn ghost big" href="{app}?example">See an example project</a></div>
+<p class="cta-note">Free to use. Nothing to install. Your schedules never leave your device.</p>
+</div>
+<figure class="hero-shot"><div class="window"><span></span><span></span><span></span></div><img src="img/screenshot-gantt.png" width="1360" height="760" alt="Planline schedule view: WBS table with durations, dates and links next to a Gantt chart with dependency arrows, critical path and progress"></figure>
+</div></section>
+
+<section class="strip"><div class="wrap">
+<div>{icon('free')}<span><b>Free</b> no account or licence</span></div>
+<div>{icon('lock')}<span><b>Private</b> data stays in your browser</span></div>
+<div>{icon('file')}<span><b>P6 and MS Project</b> .xer and XML import</span></div>
+<div>{icon('xls')}<span><b>Excel report</b> with Gantt and dashboard</span></div>
+</div></section>
+
+<main>
+<section class="band" id="features"><div class="wrap">
+<h2 class="sec-title">Everything a planner needs, nothing to install</h2>
+<p class="sec-lede">Planline sits between expensive licences like Primavera P6 and generic task boards that do not understand quantities, man-hours or weighted progress.</p>
+<div class="feats">
+{feat_html}
+</div>
+</div></section>
+
+<section class="band alt"><div class="wrap split2">
+<div>
+<h2 class="sec-title">Made for oil &amp; gas, energy and construction</h2>
+<p>Progress on EPC work is measured in inch-dia welded, tonnes erected and metres of cable pulled, not ticked boxes. Planline works the way project controls teams do: quantities drive earned man-hours, man-hours drive weightage, and weightage gives a true overall percent complete.</p>
+<ul class="ticks">
+<li>{n_norms} indicative man-hour norms, {og} of them for oil &amp; gas EPCM: {esc(cats)} and more</li>
+<li>Rules of credit by quantity, recorded day by day, week by week or month by month</li>
+<li>Baseline, schedule lock and planned vs actual S-curves for the monthly report</li>
+</ul>
+<p><a href="man-hour-norms/">Browse the man-hour norms</a> · <a href="progress-measurement/">How weighted progress works</a></p>
+</div>
+<figure class="shot"><img src="img/screenshot-dashboard.png" width="1360" height="760" loading="lazy" alt="Planline dashboard with KPI tiles, planned versus actual S-curve and man-hour histogram"></figure>
+</div></section>
+
+<section class="band"><div class="wrap">
+<h2 class="sec-title">Up and running in three steps</h2>
+<ol class="steps three">
+<li><b>Start or import.</b> Begin with a blank project, paste rows from Excel, or import a P6 .xer or MS Project XML file.</li>
+<li><b>Plan.</b> Add durations, links, quantities and norms. Dates, critical path and man-hours update as you type.</li>
+<li><b>Track and report.</b> Record progress, watch the S-curve and export an Excel report for the weekly meeting.</li>
+</ol>
+<p class="center"><a class="btn big" href="{app}">Open the scheduler</a></p>
+</div></section>
+
+<div class="wrap"><div class="ad-slot" hidden></div></div>
+
+<section class="band alt"><div class="wrap">
+<h2 class="sec-title">Guides for planners</h2>
+<p class="sec-lede">Practical explanations with worked examples, each with a free tool to try it on.</p>
+<div class="cards">
+{guide_html}
+</div>
+</div></section>
+
+<section class="band"><div class="wrap narrow">
+{faq_html(faq)}
+</div></section>
+
+<section class="final-cta"><div class="wrap">
+<h2>Your next schedule, ready in minutes</h2>
+<p>Free, private and built for project controls.</p>
+<a class="btn big light" href="{app}">Open the scheduler</a>
+</div></section>
+</main>
+''' + site_footer(0)
+
+
+# ---------------------------------------------------------------------------- app/index.html head
+def patch_app(n_norms):
+    title = 'Planline Scheduler: Free Online Gantt Chart, CPM and Progress Tool'
+    desc = app_desc(n_norms)
     block = ('<!-- seo:start (generated by tools/build_pages.py) -->\n'
              f'<title>{esc(title)}</title>\n<meta name="description" content="{esc(desc)}">\n'
-             + social_tags(title, desc, SITE_URL) + head_tags()
-             + ld(app_ld) + '\n' + ld(site_ld) + '\n<!-- seo:end -->')
-    path = os.path.join(ROOT, 'index.html')
+             + social_tags(title, desc, url('app/')) + head_tags()
+             + ld(app_ld(n_norms)) + '\n<!-- seo:end -->')
+    path = os.path.join(ROOT, 'app', 'index.html')
     src = open(path, encoding='utf-8').read()
-    if '<!-- seo:start' in src:
-        src = re.sub(r'<!-- seo:start.*?<!-- seo:end -->', lambda m: block, src, flags=re.S)
-    else:
-        src = re.sub(r'<title>.*?</title>\n<meta name="description"[^>]*>', lambda m: block, src, count=1, flags=re.S)
+    src = re.sub(r'<!-- seo:start.*?<!-- seo:end -->', lambda m: block, src, flags=re.S)
     open(path, 'w', encoding='utf-8').write(src)
 
 
@@ -593,15 +747,16 @@ def main():
         out = os.path.join(ROOT, p['path'] + ('index.html' if p['path'].endswith('/') else ''))
         os.makedirs(os.path.dirname(out), exist_ok=True)
         open(out, 'w', encoding='utf-8').write(page(p, depth))
-    patch_index(len(norms))
+    open(os.path.join(ROOT, 'index.html'), 'w', encoding='utf-8').write(home(norms, P))
+    patch_app(len(norms))
 
-    locs = [('', '1.0')] + [(p['path'], '0.8' if p.get('article') else '0.5') for p in P]
+    locs = [('', '1.0'), ('app/', '0.9')] + [(p['path'], '0.8' if p.get('article') else '0.5') for p in P]
     sm = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     sm += [f'  <url><loc>{url(path)}</loc><lastmod>{UPDATED}</lastmod><priority>{pr}</priority></url>' for path, pr in locs]
     sm.append('</urlset>')
     open(os.path.join(ROOT, 'sitemap.xml'), 'w').write('\n'.join(sm) + '\n')
     open(os.path.join(ROOT, 'robots.txt'), 'w').write(f'User-agent: *\nAllow: /\n\nSitemap: {url("sitemap.xml")}\n')
-    print(f'Wrote {len(P)} pages, sitemap.xml ({len(locs)} URLs), robots.txt and index.html SEO tags for {SITE_URL}')
+    print(f'Wrote home page, {len(P)} pages, sitemap.xml ({len(locs)} URLs), robots.txt and app/index.html SEO tags for {SITE_URL}')
 
 
 if __name__ == '__main__':

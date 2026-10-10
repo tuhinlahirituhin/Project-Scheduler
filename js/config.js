@@ -10,11 +10,12 @@ window.PS_CONFIG = {
     slots: { top: '', bottom: '', content: '' },   // content: ad unit shown on the guide pages
   },
 
-  // Optional footer links, e.g. a privacy policy page (AdSense requires one) or a "Buy me a coffee" page.
+  // Footer links in the scheduler. It lives in app/, so these point one folder up. Add any page, e.g. a privacy policy page (AdSense requires one) or a "Buy me a coffee" page.
   links: [
-    { label: 'Guides', href: 'guides/' },
-    { label: 'Man-hour norms', href: 'man-hour-norms/' },
-    { label: 'About', href: 'about/' },
-    { label: 'Privacy', href: 'privacy.html' },
+    { label: 'Home', href: '../' },
+    { label: 'Guides', href: '../guides/' },
+    { label: 'Man-hour norms', href: '../man-hour-norms/' },
+    { label: 'About', href: '../about/' },
+    { label: 'Privacy', href: '../privacy.html' },
   ],
 };
