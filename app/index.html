@@ -57,6 +57,7 @@
     <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5" y="5" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M11 3.5V3a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6.5a1 1 0 0 0 1 1H4" stroke="currentColor" stroke-width="1.4" fill="none"/></symbol>
     <symbol id="i-left" viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-right" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M2.8 14a5.2 5.2 0 0 1 10.4 0" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></symbol>
     <symbol id="i-flag" viewBox="0 0 16 16"><path d="M3.5 14V2.5M3.5 3h8l-1.5 3 1.5 3h-8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
@@ -85,6 +86,7 @@
       <button type="button" data-export="template"><span>Blank import template (.xlsx)</span><small>Fill in your WBS and import it back</small></button>
     </div>
   </details>
+  <button class="btn ghost" id="btn-account" type="button" hidden><svg><use href="#i-user"/></svg><span>Sign in</span></button>
   <button class="btn icon ghost" id="btn-help" type="button" aria-label="Help"><svg><use href="#i-help"/></svg></button>
   <button class="btn icon ghost" id="btn-theme" type="button" aria-label="Switch light or dark theme"><svg><use href="#i-moon"/></svg></button>
 </header>
@@ -177,7 +179,7 @@
 
 <div class="ad-slot" id="ad-bottom" hidden></div>
 <footer class="sitefoot">
-  <span>Your projects are stored only in this browser. Export a backup to keep a copy.</span>
+  <span id="foot-store">Your projects are stored only in this browser. Export a backup to keep a copy.</span>
   <span id="foot-links"></span>
 </footer>
 
@@ -188,12 +190,14 @@
 <dialog id="dlg-confirm" aria-label="Confirm"><form method="dialog" class="dlg" id="confirm-body"></form></dialog>
 <dialog id="dlg-projects" aria-label="Projects"><form method="dialog" class="dlg" id="projects-body"></form></dialog>
 <dialog id="dlg-welcome" aria-label="Get started"><form method="dialog" class="dlg" id="welcome-body"></form></dialog>
+<dialog id="dlg-account" aria-label="Account"><form method="dialog" class="dlg acct" id="account-body"></form></dialog>
 <dialog id="dlg-help" aria-label="Help"><form method="dialog" class="dlg" id="help-body"></form></dialog>
 
 <script src="../vendor/xlsx.full.min.js"></script>
 <script src="../vendor/chart.umd.min.js"></script>
 <script src="../js/config.js"></script>
 <script src="../js/util.js"></script>
+<script src="../js/cloud.js"></script>
 <script src="../js/norms.js"></script>
 <script src="../js/schedule.js"></script>
 <script src="../js/analytics.js"></script>

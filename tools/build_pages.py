@@ -540,15 +540,16 @@ def pages(norms):
     P.append(dict(
         path='about/', crumb='About', no_cta=False,
         title='About Planline, the Free Browser-Based Project Scheduler',
-        desc='Planline is a free, browser-based project scheduler for EPC, EPCM and construction planning. No account, no server: your schedules stay on your device.',
+        desc='Planline is a free, browser-based project scheduler for EPC, EPCM and construction planning. No account needed: your schedules stay on your device unless you choose to save them to your account.',
         h1='About Planline',
         lede='Planline is a free project scheduler made for planners and project controls engineers, especially in oil &amp; gas, energy and construction.',
         body=f'''
 <p>Planning software is usually expensive, heavy, or built for office task lists rather than engineering and construction. Planline aims to give every planner, site engineer and student a sound scheduling and progress tool that opens in seconds.</p>
 <h2>How it works</h2>
 <ul>
-<li>Everything runs in your web browser. There is no account and no server-side database.</li>
+<li>Everything runs in your web browser. No account is needed to use it.</li>
 <li>Your projects are saved in your browser's local storage on your own device. Export a backup file to keep a copy or move it to another computer.</li>
+<li>If you like, sign in with your email to also save your projects to your own account and open them on any device.</li>
 <li>The site is free to use and may be supported by advertising.</li>
 </ul>
 <h2>What it does</h2>
@@ -560,11 +561,20 @@ def pages(norms):
     P.append(dict(
         path='privacy.html', crumb='Privacy', no_cta=True, no_hero_cta=True,
         title='Privacy Policy | Planline',
-        desc='Planline privacy policy: your project data stays in your browser. Information about advertising cookies and hosting logs.',
+        desc='Planline privacy policy: your project data stays in your browser unless you sign in to save it to your account. Information about accounts, advertising cookies and hosting logs.',
         h1='Privacy policy',
         lede=f'Last updated {UPDATED}.',
         body=f'''
-<p><b>Your project data stays on your device.</b> Planline runs entirely in your web browser. Projects, tasks and norms are saved in your browser's local storage and are never uploaded to any server we run. We have no account system and cannot see your schedules. Files you import are read by your browser and are not uploaded.</p>
+<p><b>Your project data stays on your device unless you sign in.</b> Planline runs entirely in your web browser. Without an account, projects, tasks and norms are saved only in your browser's local storage and are not uploaded anywhere. Files you import are read by your browser and are not uploaded.</p>
+<h2>Optional account</h2>
+<p>You can choose to sign in, with a link sent to your email address or with your Google account, so your projects are saved to your account and open on any device. If you do:</p>
+<ul>
+<li>We store your email address and a user ID to identify your account, and copies of the projects you save (names, tasks, dates, quantities, progress and settings). Example projects and your edited norms library stay in your browser.</li>
+<li>Sign-in and storage are provided by Google Firebase (Firebase Authentication and Cloud Firestore). Google processes this data on our behalf; see the <a href="https://firebase.google.com/support/privacy">Firebase privacy information</a>.</li>
+<li>Security rules allow only you, when signed in, to read or change your saved projects. We do not sell your data or use your project contents for advertising.</li>
+<li>We use your email address only to sign you in. We do not send newsletters.</li>
+<li>Delete your account and every saved project at any time from the account window in the scheduler (Sign out or delete account). Signing out keeps a copy in your browser unless you choose to remove it.</li>
+</ul>
 <h2>Advertising</h2>
 <p>This site may show ads served by Google AdSense. Google and its partners use cookies to serve ads based on your visits to this and other websites. You can opt out of personalised advertising at <a href="https://adssettings.google.com">adssettings.google.com</a>. See <a href="https://policies.google.com/technologies/ads">how Google uses information from sites that use its services</a>.</p>
 <h2>Visitor statistics</h2>

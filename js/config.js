@@ -10,6 +10,21 @@ window.PS_CONFIG = {
     slots: { top: '', bottom: '', content: '' },   // content: ad unit shown on the guide pages
   },
 
+  // Accounts: visitors can sign in with an emailed link (or Google) and have their projects saved to
+  // their account, so they open on any device. Leave enabled: false until the Firebase project is set up
+  // (step by step in firebase/README.md), then paste the firebaseConfig values and set enabled: true.
+  // These values are public by design; the security rules in firebase/firestore.rules protect the data.
+  cloud: {
+    enabled: false,
+    firebase: {
+      apiKey: '',
+      authDomain: '',         // e.g. 'planline-app.firebaseapp.com'
+      projectId: '',          // e.g. 'planline-app'
+      appId: '',
+    },
+    googleSignIn: true,       // also show "Continue with Google"
+  },
+
   // Footer links in the scheduler. It lives in app/, so these point one folder up. Add any page, e.g. a privacy policy page (AdSense requires one) or a "Buy me a coffee" page.
   links: [
     { label: 'Home', href: '../' },
