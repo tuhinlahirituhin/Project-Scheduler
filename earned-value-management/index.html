@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earned Value Management Explained: PV, EV, AC, SPI and CPI with a Worked Example | Planline</title>
+<meta name="description" content="Earned value management in plain language: planned value, earned value, actual cost, schedule and cost variance, SPI, CPI, EAC, ETC and TCPI, with a worked example in man-hours for a construction project.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/earned-value-management/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="Earned Value Management Explained: PV, EV, AC, SPI and CPI with a Worked Example | Planline">
+<meta property="og:description" content="Earned value management in plain language: planned value, earned value, actual cost, schedule and cost variance, SPI, CPI, EAC, ETC and TCPI, with a worked example in man-hours for a construction project.">
+<meta property="og:url" content="https://planline.app/earned-value-management/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Earned Value Management Explained: PV, EV, AC, SPI and CPI with a Worked Example | Planline">
+<meta name="twitter:description" content="Earned value management in plain language: planned value, earned value, actual cost, schedule and cost variance, SPI, CPI, EAC, ETC and TCPI, with a worked example in man-hours for a construction project.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<meta name="google-site-verification" content="T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;b1f68bc1b78142b4924bf774c42fe6e7&quot;}"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"Earned value management","item":"https://planline.app/earned-value-management/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Earned value management explained","description":"Earned value management in plain language: planned value, earned value, actual cost, schedule and cost variance, SPI, CPI, EAC, ETC and TCPI, with a worked example in man-hours for a construction project.","dateModified":"2026-10-10","mainEntityOfPage":"https://planline.app/earned-value-management/","author":{"@type":"Organization","name":"Planline","url":"https://planline.app/about/"},"publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a good SPI or CPI?","acceptedAnswer":{"@type":"Answer","text":"Exactly 1.0 means on plan. Above 1.0 is ahead of schedule (SPI) or under budget (CPI); below 1.0 is behind or over. Most owners start asking questions below about 0.95."}},{"@type":"Question","name":"What is the difference between earned value and physical progress?","acceptedAnswer":{"@type":"Answer","text":"Physical progress is earned value expressed as a percentage: EV divided by BAC. Earned value management adds the comparison with planned value and actual cost."}},{"@type":"Question","name":"Can I use earned value without cost data?","acceptedAnswer":{"@type":"Answer","text":"Yes. Using man-hours for PV, EV and AC is common in construction and gives the same indices without needing cost information."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../app/">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../">Planline</a> › <a href="../guides/">Guides</a> › Earned value management</p>
+<h1>Earned value management explained</h1>
+<p class="lede">Earned value answers two questions with three numbers: are we ahead or behind, and are we spending more or less than planned for the work done? This guide explains every formula with one worked example in man-hours.</p>
+<p class="byline">Planline guide · Updated 10 October 2026</p>
+<div class="cta-row"><a class="btn" href="../app/">Open the free scheduler</a><span class="cta-note">No sign-up needed, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<h2>The three base numbers</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Term</th><th>Also called</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><b>PV</b> planned value</td><td>BCWS</td><td>The budget for the work that should be done by the status date</td></tr>
+<tr><td><b>EV</b> earned value</td><td>BCWP</td><td>The budget for the work actually done by the status date</td></tr>
+<tr><td><b>AC</b> actual cost</td><td>ACWP</td><td>What the work done actually cost (or the man-hours actually spent)</td></tr>
+<tr><td><b>BAC</b> budget at completion</td><td></td><td>The total budget for all the work</td></tr>
+</tbody></table></div>
+<p>The trick is in EV: it values the work done at its <i>budget</i>, not at what it cost. That makes it comparable with both the plan (PV) and the spend (AC).</p>
+
+<h2>Man-hours or money?</h2>
+<p>On construction projects earned value is very often measured in man-hours rather than currency. Budgeted man-hours come from quantities and norms, earned man-hours come from quantities installed, and actual man-hours come from timesheets. This keeps craft productivity separate from price changes in materials and exchange rates. The formulas are identical either way.</p>
+
+<h2>Worked example</h2>
+<p>A piping and steel package has a budget of <b>10,000 man-hours</b>. At the status date:</p>
+<ul>
+<li>The plan says 50% should be done, so <b>PV = 5,000 MH</b>.</li>
+<li>Measured progress is 42.5% (see the <a href="../progress-measurement/">progress measurement guide</a> for how this is calculated), so <b>EV = 4,250 MH</b>.</li>
+<li>Timesheets show <b>AC = 5,100 MH</b> booked to the package.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>Measure</th><th>Formula</th><th class="num">Result</th><th>Reading</th></tr></thead>
+<tbody>
+<tr><td>Schedule variance (SV)</td><td>EV − PV</td><td class="num">−750 MH</td><td>Behind plan</td></tr>
+<tr><td>Schedule performance index (SPI)</td><td>EV ÷ PV</td><td class="num">0.85</td><td>85% of planned work done</td></tr>
+<tr><td>Cost variance (CV)</td><td>EV − AC</td><td class="num">−850 MH</td><td>Overspent</td></tr>
+<tr><td>Cost performance index (CPI)</td><td>EV ÷ AC</td><td class="num">0.83</td><td>Each hour spent earns 0.83 hours of budget</td></tr>
+<tr><td>Estimate at completion (EAC)</td><td>BAC ÷ CPI</td><td class="num">12,000 MH</td><td>Forecast if productivity stays the same</td></tr>
+<tr><td>Estimate to complete (ETC)</td><td>EAC − AC</td><td class="num">6,900 MH</td><td>Hours still needed</td></tr>
+<tr><td>Variance at completion (VAC)</td><td>BAC − EAC</td><td class="num">−2,000 MH</td><td>Forecast overrun</td></tr>
+<tr><td>To-complete performance index (TCPI)</td><td>(BAC − EV) ÷ (BAC − AC)</td><td class="num">1.17</td><td>Productivity needed on the rest to finish on budget</td></tr>
+</tbody></table></div>
+<p>Reading it together: the package is about 15% behind and 17% less productive than estimated. To finish within 10,000 hours the crews would need to work 17% <i>better</i> than budget on the remaining work, which is rarely realistic, so the honest forecast is around 12,000 hours.</p>
+
+<h2>Which EAC formula to use</h2>
+<ul>
+<li><b>BAC ÷ CPI</b> assumes the productivity so far continues. A sound default once a package is 20 to 30% complete.</li>
+<li><b>AC + (BAC − EV)</b> assumes the remaining work goes exactly to budget. Only defensible if the cause of the overrun is gone.</li>
+<li><b>AC + (BAC − EV) ÷ (CPI × SPI)</b> assumes being behind schedule will also push costs up, for example through acceleration. A cautious forecast.</li>
+</ul>
+
+<h2>Reading SPI with care</h2>
+<p>SPI is measured in budget, not in time, and it always returns to 1.0 at the end of a project because all the planned work is eventually earned. Late in a project it stops being a good schedule indicator; look at the critical path and float instead. A high SPI can also hide trouble if crews are doing easy, non-critical work ahead of plan while critical work slips.</p>
+
+<h2>What makes earned value reliable</h2>
+<ul>
+<li>Objective progress: measured quantities and agreed <a href="../rules-of-credit/">rules of credit</a>, not percent-complete guesses.</li>
+<li>A frozen baseline, so PV does not move every month.</li>
+<li>Timesheets booked to the same WBS elements as the budget.</li>
+<li>Same cut-off date for progress and actual hours.</li>
+</ul>
+
+<h2>Earned value in Planline</h2>
+<p>Planline calculates budget man-hours from quantities and norms, earned man-hours from the quantities you record, and the planned percent complete at the status date. The dashboard shows actual against planned progress, earned man-hours, the schedule performance index (SPI) and the planned versus actual S-curve. Actual hours from timesheets are not tracked in the scheduler, so calculate CPI and the forecast alongside it in the Excel report.</p>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>What is a good SPI or CPI?</summary><p>Exactly 1.0 means on plan. Above 1.0 is ahead of schedule (SPI) or under budget (CPI); below 1.0 is behind or over. Most owners start asking questions below about 0.95.</p></details>
+<details><summary>What is the difference between earned value and physical progress?</summary><p>Physical progress is earned value expressed as a percentage: EV divided by BAC. Earned value management adds the comparison with planned value and actual cost.</p></details>
+<details><summary>Can I use earned value without cost data?</summary><p>Yes. Using man-hours for PV, EV and AC is common in construction and gives the same indices without needing cost information.</p></details>
+</div>
+<h2>Related guides</h2>
+<ul class="related">
+<li><a href="../progress-measurement/">Weighted progress measurement and S-curves for EPC projects</a></li>
+<li><a href="../rules-of-credit/">Rules of credit for progress measurement</a></li>
+</ul>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free and needs no sign-up. Your schedules stay in your browser unless you choose to sign in and save them to your account. Start a blank project, import your own file, or look around the example project first.</p>
+<p><a class="btn" href="../app/">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../">Home</a>
+<a href="../app/">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../contact/">Contact</a>
+<a href="../privacy.html">Privacy</a>
+<a href="../terms/">Terms</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>

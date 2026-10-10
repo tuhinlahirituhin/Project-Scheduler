@@ -1311,10 +1311,12 @@ window.PS = window.PS || {};
   function initAds() {
     const a = CFG.ads || {};
     if (!a.enabled || !a.adsenseClient) return;
-    const s = document.createElement('script');
-    s.async = true; s.crossOrigin = 'anonymous';
-    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.adsenseClient);
-    document.head.appendChild(s);
+    if (!document.querySelector('script[src*="adsbygoogle.js"]')) { // the page head may already load it
+      const s = document.createElement('script');
+      s.async = true; s.crossOrigin = 'anonymous';
+      s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(a.adsenseClient);
+      document.head.appendChild(s);
+    }
     [['top', '#ad-top'], ['bottom', '#ad-bottom']].forEach(([k, sel]) => {
       const slot = a.slots && a.slots[k];
       if (!slot) return;

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Estimate Piping Man-Hours (Inch-Dia Method, Worked Example) | Planline</title>
+<meta name="description" content="Estimate piping installation man-hours step by step: take-off from isometrics, inch-dia and metres, weld, erection, valve, support and test norms, productivity factors, and a worked example with crew and duration.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/piping-man-hours/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="How to Estimate Piping Man-Hours (Inch-Dia Method, Worked Example) | Planline">
+<meta property="og:description" content="Estimate piping installation man-hours step by step: take-off from isometrics, inch-dia and metres, weld, erection, valve, support and test norms, productivity factors, and a worked example with crew and duration.">
+<meta property="og:url" content="https://planline.app/piping-man-hours/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to Estimate Piping Man-Hours (Inch-Dia Method, Worked Example) | Planline">
+<meta name="twitter:description" content="Estimate piping installation man-hours step by step: take-off from isometrics, inch-dia and metres, weld, erection, valve, support and test norms, productivity factors, and a worked example with crew and duration.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<meta name="google-site-verification" content="T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;b1f68bc1b78142b4924bf774c42fe6e7&quot;}"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"Piping man-hour estimate","item":"https://planline.app/piping-man-hours/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"How to estimate piping man-hours","description":"Estimate piping installation man-hours step by step: take-off from isometrics, inch-dia and metres, weld, erection, valve, support and test norms, productivity factors, and a worked example with crew and duration.","dateModified":"2026-10-10","mainEntityOfPage":"https://planline.app/piping-man-hours/","author":{"@type":"Organization","name":"Planline","url":"https://planline.app/about/"},"publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many man-hours per inch-dia for welding?","acceptedAnswer":{"@type":"Answer","text":"For carbon steel standard wall field welds, roughly 1 to 1.5 man-hours per inch-dia is common, with 1.2 a typical planning value. Thicker walls, stainless steel and alloys take more; shop welds take less."}},{"@type":"Question","name":"What is the difference between inch-dia and inch-metre?","acceptedAnswer":{"@type":"Answer","text":"Inch-dia measures welds: size × number of joints. Inch-metre measures pipe: size × length, and is sometimes used for erection instead of metres by size."}},{"@type":"Question","name":"Do piping norms include testing?","acceptedAnswer":{"@type":"Answer","text":"Usually not. Hydrotest, flushing, reinstatement, NDT and heat treatment are estimated separately, as in the example."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../app/">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../">Planline</a> › <a href="../guides/">Guides</a> › Piping man-hour estimate</p>
+<h1>How to estimate piping man-hours</h1>
+<p class="lede">Piping is usually the largest share of direct man-hours on an oil and gas project. This guide shows the standard inch-dia method, from the isometric take-off to man-hours, crew size and duration, with a worked example.</p>
+<p class="byline">Planline guide · Updated 10 October 2026</p>
+<div class="cta-row"><a class="btn" href="../app/">Open the free scheduler</a><span class="cta-note">No sign-up needed, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<h2>The units</h2>
+<ul>
+<li><b>Inch-dia (diameter-inch)</b> measures welding: nominal pipe size in inches × number of joints. Ten 6-inch butt welds are 60 inch-dia.</li>
+<li><b>Metres (or feet)</b> measure pipe handling and erection, and testing.</li>
+<li><b>Each</b> counts valves, flanged joints and standard supports; heavy supports are often measured in kilograms.</li>
+<li><b>Inch-metre</b> (size × length) is used by some contractors for erection instead of metres by size.</li>
+</ul>
+
+<h2>Step 1: take off quantities from the isometrics</h2>
+<p>From each isometric drawing or a 3D model report, list by line size, material and wall thickness: field welds, pipe length, valves, flanged joints and supports. Separate shop welds (done in the fabrication shop) from field welds, because field welds take much longer. Group lines into test packs, since testing, reinstatement and progress are managed per test pack.</p>
+
+<h2>Step 2: apply norms</h2>
+<p>Multiply each quantity by its man-hour norm. Norms rise with wall thickness and with harder materials: a stainless or alloy weld takes noticeably longer than carbon steel. The values below are from Planline's <a href="../man-hour-norms/">indicative norms library</a>.</p>
+
+<h2>Worked example: a pipe rack line package</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Item</th><th class="num">Quantity</th><th>Unit</th><th class="num">Norm</th><th class="num">Man-hours</th></tr></thead>
+<tbody>
+<tr><td>Field butt welds, CS, STD, 6" (120 joints)</td><td class="num">720</td><td>inch-dia</td><td class="num">1.2</td><td class="num">864</td></tr>
+<tr><td>Field butt welds, CS, Sch 80, 4" (40 joints)</td><td class="num">160</td><td>inch-dia</td><td class="num">1.6</td><td class="num">256</td></tr>
+<tr><td>Pipe handling and erection, 6"</td><td class="num">600</td><td>m</td><td class="num">1.6</td><td class="num">960</td></tr>
+<tr><td>Pipe handling and erection, 4"</td><td class="num">200</td><td>m</td><td class="num">1.2</td><td class="num">240</td></tr>
+<tr><td>Manual valves, flanged, 6"</td><td class="num">12</td><td>each</td><td class="num">4.5</td><td class="num">54</td></tr>
+<tr><td>Flanged joint bolt-up, 6"</td><td class="num">48</td><td>joint</td><td class="num">2</td><td class="num">96</td></tr>
+<tr><td>Standard supports (shoe, guide, clamp)</td><td class="num">150</td><td>each</td><td class="num">2.5</td><td class="num">375</td></tr>
+<tr><td>Hydrotest and flushing</td><td class="num">800</td><td>m</td><td class="num">0.12</td><td class="num">96</td></tr>
+<tr><th>Base man-hours</th><th></th><th></th><th></th><th class="num">2,941</th></tr>
+</tbody></table></div>
+
+<h2>Step 3: apply a productivity factor</h2>
+<p>Norms assume reasonable conditions. A productivity factor adjusts them for the real site. Typical influences:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Condition</th><th>Typical effect</th></tr></thead>
+<tbody>
+<tr><td>Work at height on a pipe rack or in congested modules</td><td>+10 to +30%</td></tr>
+<tr><td>Brownfield work in an operating plant (permits, gas testing, restricted hours)</td><td>+30 to +100%</td></tr>
+<tr><td>Hot or cold climate, rain seasons</td><td>+10 to +25%</td></tr>
+<tr><td>Long working hours or extended overtime</td><td>+5 to +20%</td></tr>
+<tr><td>Experienced crews, good access, prefabrication-heavy design</td><td>−5 to −15%</td></tr>
+</tbody></table></div>
+<p>Factors multiply rather than add if several apply, so be careful not to double-count. In the example the line runs on a pipe rack in a hot climate, so we use <b>1.3</b>: 2,941 × 1.3 = <b>3,823 man-hours</b>.</p>
+
+<h2>Step 4: turn man-hours into crew and duration</h2>
+<p>With a crew of 8 (welders, fitters, helpers and a rigger) working 10-hour days, the crew delivers 80 man-hours a day. 3,823 ÷ 80 ≈ <b>48 working days</b>. On a six-day week that is eight weeks. If the schedule allows only six weeks, you need roughly 10 to 11 people, provided there is enough work front for two crews to work without getting in each other's way.</p>
+
+<h2>Checks before you trust the number</h2>
+<ul>
+<li><b>Compare with history.</b> Man-hours per inch-dia of field weld, all-in, on similar past jobs is the quickest sanity check.</li>
+<li><b>Include what norms leave out.</b> Scaffolding, NDT, post-weld heat treatment, painting of field welds, and material handling at the laydown yard often have their own norms.</li>
+<li><b>Watch small-bore piping.</b> Lines of 1-1/2" and below carry many joints and supports per metre; they often take more hours than their size suggests.</li>
+<li><b>Separate direct and indirect hours.</b> Supervision, QA/QC and site overheads are usually budgeted separately.</li>
+</ul>
+
+<h2>Doing it in Planline</h2>
+<p>Create one activity per test pack or line group, enter the unit and scope quantity, pick the norm from the library and set the productivity factor. Planline calculates man-hours, and if you enter the crew size and hours per day it can set the duration too. When work starts, record welded inch-dia in the Progress entry sheet and the earned man-hours and S-curve follow.</p>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>How many man-hours per inch-dia for welding?</summary><p>For carbon steel standard wall field welds, roughly 1 to 1.5 man-hours per inch-dia is common, with 1.2 a typical planning value. Thicker walls, stainless steel and alloys take more; shop welds take less.</p></details>
+<details><summary>What is the difference between inch-dia and inch-metre?</summary><p>Inch-dia measures welds: size × number of joints. Inch-metre measures pipe: size × length, and is sometimes used for erection instead of metres by size.</p></details>
+<details><summary>Do piping norms include testing?</summary><p>Usually not. Hydrotest, flushing, reinstatement, NDT and heat treatment are estimated separately, as in the example.</p></details>
+</div>
+<h2>Related guides</h2>
+<ul class="related">
+<li><a href="../man-hour-norms/">Man-hour norms for construction and EPCM estimating</a></li>
+</ul>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free and needs no sign-up. Your schedules stay in your browser unless you choose to sign in and save them to your account. Start a blank project, import your own file, or look around the example project first.</p>
+<p><a class="btn" href="../app/">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../">Home</a>
+<a href="../app/">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../contact/">Contact</a>
+<a href="../privacy.html">Privacy</a>
+<a href="../terms/">Terms</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>

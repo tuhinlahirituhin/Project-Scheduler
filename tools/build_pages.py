@@ -12,6 +12,8 @@ import os
 import re
 import subprocess
 
+from guide_pages import know_how_guides, site_pages
+
 # The one place the public address lives. Change it here when a custom domain is set up.
 SITE_URL = 'https://planline.app/'
 SITE_NAME = 'Planline'
@@ -22,6 +24,12 @@ BING_VERIFICATION = ''
 # Cloudflare Web Analytics token (cookie-free visitor stats). Empty turns the beacon off.
 CF_ANALYTICS_TOKEN = 'b1f68bc1b78142b4924bf774c42fe6e7'
 ISSUES_URL = 'https://github.com/tuhinlahirituhin/Project-Scheduler/issues'
+# Google AdSense publisher id ('ca-pub-...'). Setting it adds the AdSense site-verification tag and code to
+# every page and writes ads.txt, which AdSense needs while it reviews the site. Ad units are then switched
+# on separately in js/config.js once the account is approved.
+ADSENSE_CLIENT = ''
+# Public contact address shown on the contact page, e.g. a Cloudflare Email Routing alias. Empty hides it.
+CONTACT_EMAIL = ''
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 esc = html.escape
@@ -51,6 +59,10 @@ def head_tags():
     if CF_ANALYTICS_TOKEN:
         beacon = esc(json.dumps({'token': CF_ANALYTICS_TOKEN}))
         out += f'<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{beacon}"></script>\n'
+    if ADSENSE_CLIENT:
+        out += f'<meta name="google-adsense-account" content="{esc(ADSENSE_CLIENT)}">\n'
+        out += ('<script async crossorigin="anonymous" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'
+                f'?client={esc(ADSENSE_CLIENT)}"></script>\n')
     return out
 
 
@@ -118,7 +130,9 @@ def site_footer(depth):
 <a href="{up}guides/">Guides</a>
 <a href="{up}man-hour-norms/">Man-hour norms</a>
 <a href="{up}about/">About</a>
+<a href="{up}contact/">Contact</a>
 <a href="{up}privacy.html">Privacy</a>
+<a href="{up}terms/">Terms</a>
 <span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
 </div></footer>
 <script src="{up}js/config.js"></script>
@@ -143,28 +157,42 @@ def page(p, depth):
     if p.get('article'):
         schema.append({'@context': 'https://schema.org', '@type': 'Article', 'headline': p['h1'], 'description': p['desc'],
                        'dateModified': UPDATED, 'mainEntityOfPage': url(p['path']),
+                       'author': {'@type': 'Organization', 'name': SITE_NAME, 'url': url('about/')},
                        'publisher': {'@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL}})
     if p.get('faq'):
         schema.append(faq_ld(p['faq']))
     faq = faq_html(p['faq']) if p.get('faq') else ''
     cta = '' if p.get('no_cta') else f'''<div class="cta-box">
 <h2>Try it on your own schedule</h2>
-<p>Planline is free, needs no sign-up and keeps your data in your browser. Start a blank project, import your own file, or look around the example project first.</p>
+<p>Planline is free and needs no sign-up. Your schedules stay in your browser unless you choose to sign in and save them to your account. Start a blank project, import your own file, or look around the example project first.</p>
 <p><a class="btn" href="{app}">Open the free scheduler</a></p>
 </div>'''
     body = p['body'].replace('{APP}', app).replace('{UP}', up)
+    byline = f'<p class="byline">Planline guide · Updated {nice_date(UPDATED)}</p>' if p.get('article') else ''
+    related = ''
+    if p.get('related'):
+        related = ('<h2>Related guides</h2>\n<ul class="related">\n'
+                   + '\n'.join(f'<li><a href="{up}{path}">{esc(name)}</a></li>' for path, name in p['related']) + '\n</ul>\n')
     return head(p['title'], p['desc'], url(p['path']), up, schema) + site_header(depth) + f'''<section class="hero"><div class="wrap">
 {crumbs}
 <h1>{esc(p["h1"])}</h1>
 <p class="lede">{p["lede"]}</p>
-{'' if p.get('no_hero_cta') else f'<div class="cta-row"><a class="btn" href="{app}">Open the free scheduler</a><span class="cta-note">No sign-up, nothing to install. Your data stays on your device.</span></div>'}
+{byline}
+{'' if p.get('no_hero_cta') else f'<div class="cta-row"><a class="btn" href="{app}">Open the free scheduler</a><span class="cta-note">No sign-up needed, nothing to install. Your data stays on your device.</span></div>'}
 </div></section>
 <main class="wrap"><div class="article">
 {body}
 <div class="ad-slot" hidden></div>
-{faq}{cta}
+{faq}{related}{cta}
 </div></main>
 ''' + site_footer(depth)
+
+
+def nice_date(iso):
+    y, m, d = iso.split('-')
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
+              'November', 'December']
+    return f'{int(d)} {months[int(m) - 1]} {y}'
 
 
 def faq_ld(items):
@@ -207,17 +235,25 @@ def norms_body(norms):
 
 
 # ---------------------------------------------------------------------------- pages
+GUIDE_GROUPS = {
+    'plan': ('Planning and scheduling', 'Build a schedule that holds up: scope, WBS, logic, critical path and short-term planning.'),
+    'control': ('Progress and project control', 'Measure physical progress objectively and forecast where the project will land.'),
+    'estimate': ('Estimating man-hours', 'Turn quantities into man-hours, crews and durations.'),
+    'tools': ('Free tools and file formats', 'Make Gantt charts and open Primavera P6 and MS Project files without a licence.'),
+}
+
+
 def pages(norms):
     n_norms, n_cats, toc, tables = norms_body(norms)
     og = sum(1 for n in norms if n['sector'].startswith('Oil'))
     P = []
 
     P.append(dict(
-        path='free-epcm-scheduling-software/', crumb='EPCM scheduling software', article=True,
+        path='free-epcm-scheduling-software/', group='tools', crumb='EPCM scheduling software', article=True,
         title='Free EPCM Scheduling Software Online (No Sign-up) | Planline',
         desc='A free online scheduler for EPC and EPCM projects: WBS, critical path, Gantt chart, man-hour norms, quantity-based progress, weightage, S-curves, and P6 / MS Project import.',
         h1='Free EPCM scheduling software that runs in your browser',
-        lede='Plan engineering, procurement and construction work with a WBS, critical path, man-hour norms and weighted progress. Planline is free, needs no account and never uploads your schedule.',
+        lede='Plan engineering, procurement and construction work with a WBS, critical path, man-hour norms and weighted progress. Planline is free, needs no account and keeps your schedule on your device.',
         body=f'''
 <p>Most EPCM scheduling tools are either expensive licences (Primavera P6, MS Project) or generic task boards that do not understand quantities, man-hours or weighted progress. Planline sits in between. It is a free planning tool built around how project controls teams actually measure EPC work: by quantities installed, man-hours earned and weighted percent complete.</p>
 <figure class="shot"><img src="{{UP}}img/screenshot-gantt.png" width="1360" height="760" loading="lazy" alt="Planline schedule view: WBS table with durations, dates and links next to a Gantt chart with dependency arrows, critical path and progress"></figure>
@@ -273,14 +309,14 @@ def pages(norms):
 ''',
         faq=[
             ('Is Planline really free?', 'Yes. There is no trial, licence or account. The site may show ads to cover its costs.'),
-            ('Where is my project data stored?', 'Only in your own browser on your own device. Nothing is uploaded. Export a backup file to keep a copy or move it to another computer.'),
+            ('Where is my project data stored?', 'In your own browser on your own device. Nothing is uploaded unless you choose to sign in, which saves your projects to your account so you can open them on other devices. You can also export a backup file.'),
             ('Can I open Primavera P6 schedules?', 'Yes. Export an .xer file from P6 and import it. Planline reads the WBS, activities, durations, relationships with lag, actual dates, percent complete and budgeted units.'),
             ('Does it work for oil and gas projects?', f'Yes. It was built with oil and gas EPCM in mind, and the norms library has {og} oil and gas items covering piping, welding and NDT, equipment, tanks, E&amp;I, insulation, painting, fireproofing, scaffolding, civil, steel, pipelines and commissioning.'),
             ('Can several people work on the same schedule?', 'Not at the same time. Each person works in their own browser. Share a schedule by exporting a backup, Excel or MS Project XML file.'),
         ]))
 
     P.append(dict(
-        path='gantt-chart-maker/', crumb='Gantt chart maker', article=True,
+        path='gantt-chart-maker/', group='tools', crumb='Gantt chart maker', article=True,
         title='Free Online Gantt Chart Maker with Critical Path (No Sign-up) | Planline',
         desc='Make a Gantt chart online for free: tasks, sub-tasks, dependencies, critical path, baseline and progress bars, then export to Excel or MS Project. No account needed.',
         h1='Free online Gantt chart maker',
@@ -319,7 +355,7 @@ def pages(norms):
         ]))
 
     P.append(dict(
-        path='xer-file-viewer/', crumb='XER file viewer', article=True,
+        path='xer-file-viewer/', group='tools', crumb='XER file viewer', article=True,
         title='Open a Primavera P6 XER File Online Free (XER Viewer) | Planline',
         desc='Open and view a Primavera P6 .xer file without a P6 licence. See the WBS, activities, relationships, critical path and Gantt chart, then export to Excel or MS Project XML.',
         h1='Open a Primavera P6 .xer file without P6',
@@ -364,7 +400,7 @@ def pages(norms):
         ]))
 
     P.append(dict(
-        path='ms-project-viewer/', crumb='MS Project file viewer', article=True,
+        path='ms-project-viewer/', group='tools', crumb='MS Project file viewer', article=True,
         title='View MS Project Files Online Free (MS Project XML Viewer) | Planline',
         desc='Open MS Project schedules without MS Project: import an MS Project XML file to see tasks, links, critical path and Gantt chart in your browser, and export to Excel.',
         h1='View MS Project schedules without MS Project',
@@ -396,11 +432,11 @@ def pages(norms):
         faq=[
             ('Can Planline open .mpp files?', 'Not directly. The .mpp format is a closed binary format. Save the file as MS Project XML (from MS Project or the free ProjectLibre) and import that.'),
             ('Can I edit the schedule and send it back?', 'Yes. Make your changes, then use Export › MS Project XML. MS Project can open the result.'),
-            ('Is the file uploaded to a server?', 'No. The file is read by your browser and saved only on your device.'),
+            ('Is the file uploaded to a server?', 'No. The file is read by your browser. The schedule is saved in your browser, and in your account only if you choose to sign in.'),
         ]))
 
     P.append(dict(
-        path='man-hour-norms/', crumb='Man-hour norms', article=True,
+        path='man-hour-norms/', group='estimate', crumb='Man-hour norms', article=True,
         title=f'Man-Hour Norms for Piping, Structural, E&I and Civil Work ({n_norms} Rates) | Planline',
         desc=f'{n_norms} indicative man-hour norms (MH per unit) for oil and gas EPCM, engineering, power, buildings and general construction: welding, piping, steel, equipment, cable, instruments, insulation, painting and more.',
         h1='Man-hour norms for construction and EPCM estimating',
@@ -429,7 +465,7 @@ def pages(norms):
         ]))
 
     P.append(dict(
-        path='progress-measurement/', crumb='Progress measurement and S-curves', article=True,
+        path='progress-measurement/', group='control', crumb='Progress measurement and S-curves', article=True,
         title='Weighted Progress Measurement and S-Curves for EPC Projects | Planline',
         desc='How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.',
         h1='Weighted progress measurement and S-curves for EPC projects',
@@ -479,7 +515,7 @@ def pages(norms):
         ]))
 
     P.append(dict(
-        path='critical-path-method/', crumb='Critical path method', article=True,
+        path='critical-path-method/', group='plan', crumb='Critical path method', article=True,
         title='Critical Path Method (CPM) Explained with a Free Online Calculator | Planline',
         desc='Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.',
         h1='Critical path method explained',
@@ -525,17 +561,23 @@ def pages(norms):
             ('What is the difference between CPM and PERT?', 'CPM uses one duration per activity. PERT uses optimistic, most likely and pessimistic durations to estimate the probability of finishing on time.'),
         ]))
 
+    P.extend(know_how_guides())
     guides = [p for p in P]
-    cards = '\n'.join(f'<a class="card" href="{{UP}}{p["path"]}"><h3>{esc(p["h1"])}</h3><p>{esc(p["desc"])}</p></a>' for p in guides)
     for p in guides:
         p['parent'] = 'guides'
+        p['related'] = [(q['path'], q['h1']) for q in guides if q is not p and q['group'] == p['group']][:4]
+    hub = []
+    for g, (name, blurb) in GUIDE_GROUPS.items():
+        cards = '\n'.join(f'<a class="card" href="{{UP}}{p["path"]}"><h3>{esc(p["h1"])}</h3><p>{esc(p["desc"])}</p></a>'
+                          for p in guides if p['group'] == g)
+        hub.append(f'<h2 id="{g}">{esc(name)}</h2>\n<p>{esc(blurb)}</p>\n<div class="cards">\n{cards}\n</div>')
     P.append(dict(
         path='guides/', crumb='Guides', no_cta=False,
         title='Project Scheduling and Project Controls Guides | Planline',
-        desc='Free guides for planners and project controls engineers: EPCM scheduling, critical path, weighted progress and S-curves, man-hour norms, and opening P6 and MS Project files.',
+        desc='Free guides for planners and project controls engineers: building a schedule, WBS, critical path, look-aheads, weighted progress, rules of credit, earned value, man-hour estimating, and opening P6 and MS Project files.',
         h1='Guides for planners and project controls',
-        lede='Practical guides on scheduling, progress measurement and estimating for EPC, EPCM and construction projects, each with a free tool to try it on.',
-        body=f'<div class="cards">\n{cards}\n</div>'))
+        lede='Practical guides on scheduling, progress measurement, earned value and estimating for EPC, EPCM and construction projects, with worked examples and a free tool to try them on.',
+        body='\n'.join(hub)))
 
     P.append(dict(
         path='about/', crumb='About', no_cta=False,
@@ -554,8 +596,12 @@ def pages(norms):
 </ul>
 <h2>What it does</h2>
 <p>WBS and critical path scheduling, a Gantt chart, man-hour estimating from {n_norms} indicative norms, quantity-based and weighted progress measurement, S-curve dashboards, and import from Primavera P6, MS Project, Excel and CSV. See the <a href="{{UP}}free-epcm-scheduling-software/">feature overview</a>.</p>
+<h2>Who makes Planline</h2>
+<p>Planline is an independent project, built and maintained by a project controls professional from the oil &amp; gas and energy industry. The guides are written from day-to-day planning practice on EPC and EPCM projects: building and reviewing schedules, measuring progress, and estimating man-hours for site work. Norms and examples are indicative and are reviewed and extended as feedback comes in.</p>
+<h2>Guides</h2>
+<p>Alongside the scheduler, Planline publishes free <a href="{{UP}}guides/">guides for planners</a> on building a schedule, the WBS, critical path, look-ahead planning, weighted progress, rules of credit, earned value and man-hour estimating.</p>
 <h2>Contact and feedback</h2>
-<p>Found a bug or want a feature? Please <a href="{ISSUES_URL}" rel="noopener">open an issue on GitHub</a>.</p>
+<p>Found a bug, want a feature or have a topic you would like covered? See the <a href="{{UP}}contact/">contact page</a>.</p>
 '''))
 
     P.append(dict(
@@ -576,16 +622,30 @@ def pages(norms):
 <li>Delete your account and every saved project at any time from the account window in the scheduler (Sign out or delete account). Signing out keeps a copy in your browser unless you choose to remove it.</li>
 </ul>
 <h2>Advertising</h2>
-<p>This site may show ads served by Google AdSense. Google and its partners use cookies to serve ads based on your visits to this and other websites. You can opt out of personalised advertising at <a href="https://adssettings.google.com">adssettings.google.com</a>. See <a href="https://policies.google.com/technologies/ads">how Google uses information from sites that use its services</a>.</p>
+<p>This site may show ads served by Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on your previous visits to this and other websites. Google's use of advertising cookies enables it and its partners to serve ads to you based on those visits.</p>
+<ul>
+<li>You can opt out of personalised advertising in Google's <a href="https://adssettings.google.com">Ads Settings</a>.</li>
+<li>You can opt out of some third-party vendors' use of cookies for personalised advertising at <a href="https://www.aboutads.info/choices/">www.aboutads.info</a> or, in Europe, <a href="https://www.youronlinechoices.eu/">www.youronlinechoices.eu</a>.</li>
+<li>Visitors in the European Economic Area, the UK and Switzerland are asked for consent before personalised ads are shown, and can change their choice at any time.</li>
+<li>See <a href="https://policies.google.com/technologies/partner-sites">how Google uses information from sites or apps that use its services</a>.</li>
+</ul>
+<p>Advertising never has access to the contents of your projects.</p>
 <h2>Visitor statistics</h2>
 <p>We use Cloudflare Web Analytics to count page views. It does not use cookies or collect personal data, and it never sees your project data.</p>
 <h2>Fonts</h2>
 <p>Pages load fonts from Google Fonts, which means your browser requests them from Google's servers.</p>
 <h2>Hosting</h2>
 <p>The site is hosted on a static web host, which may keep standard server logs (such as IP address and browser type) for security and operations.</p>
+<h2>Local storage</h2>
+<p>The scheduler uses your browser's local storage to keep your projects, settings and theme choice. This stays on your device and is not used for tracking.</p>
+<h2>Children</h2>
+<p>Planline is a professional tool and is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+<h2>Changes to this policy</h2>
+<p>We may update this policy when the site changes. The date at the top shows the latest revision.</p>
 <h2>Contact</h2>
-<p>Questions about this policy: <a href="{ISSUES_URL}" rel="noopener">open an issue on GitHub</a>.</p>
+<p>Questions about this policy: see the <a href="{{UP}}contact/">contact page</a>.</p>
 '''))
+    P.extend(site_pages(ISSUES_URL, CONTACT_EMAIL))
     return P
 
 
@@ -638,10 +698,14 @@ def home(norms, P):
     title = 'Planline: Free Online Project Scheduler for EPC & EPCM (Gantt, CPM, Man-hours)'
     desc = app_desc(n_norms)
     up, home_href, app = links(0)
-    guides = [p for p in P if p.get('parent')]
+    featured = ['how-to-build-a-project-schedule/', 'critical-path-method/', 'progress-measurement/',
+                'earned-value-management/', 'piping-man-hours/', 'xer-file-viewer/']
+    by_path = {p['path']: p for p in P}
+    guides = [by_path[f] for f in featured]
+    n_guides = sum(1 for p in P if p.get('parent'))
     faq = [
         ('Is Planline really free?', 'Yes. There is no trial, licence or account. The site may show ads to cover its costs.'),
-        ('Where are my schedules saved?', 'Only in your own browser on your own device. Nothing is uploaded. Use Export › Project backup to keep a copy or move it to another computer.'),
+        ('Where are my schedules saved?', 'In your own browser on your own device. Nothing is uploaded unless you choose to sign in with your email or Google account, which saves your projects to your account so they open on any device. Use Export › Project backup to keep your own copy.'),
         ('Can I open Primavera P6 and MS Project files?', 'Yes. Import a P6 .xer file or an MS Project XML file. Native .mpp files must first be saved as XML from MS Project or the free ProjectLibre.'),
         ('Does it work on a phone?', 'It works in any modern browser. A laptop or tablet is more comfortable for editing a schedule; a phone is fine for checking progress.'),
         ('Who is it for?', 'Planners, project controls engineers, package and site engineers, subcontractors and students working on EPC, EPCM, oil and gas, energy and construction projects.'),
@@ -667,7 +731,7 @@ def home(norms, P):
 <h1>Plan, schedule and track EPC projects in your browser</h1>
 <p class="lede">Build the WBS, link activities, find the critical path, estimate man-hours from norms and measure weighted progress with S-curves. Built for planners and project controls in oil &amp; gas, energy and construction.</p>
 <div class="cta-row"><a class="btn big" href="{app}">Open the scheduler</a><a class="btn ghost big" href="{app}?example">See an example project</a></div>
-<p class="cta-note">Free to use. Nothing to install. Your schedules never leave your device.</p>
+<p class="cta-note">Free to use. Nothing to install. Your schedules stay on your device unless you sign in to save them.</p>
 </div>
 <figure class="hero-shot"><div class="window"><span></span><span></span><span></span></div><img src="img/screenshot-gantt.png" width="1360" height="760" alt="Planline schedule view: WBS table with durations, dates and links next to a Gantt chart with dependency arrows, critical path and progress"></figure>
 </div></section>
@@ -720,6 +784,7 @@ def home(norms, P):
 <div class="cards">
 {guide_html}
 </div>
+<p class="center"><a href="guides/">See all {n_guides} guides</a></p>
 </div></section>
 
 <section class="band"><div class="wrap narrow">
@@ -733,6 +798,30 @@ def home(norms, P):
 </div></section>
 </main>
 ''' + site_footer(0)
+
+
+# ---------------------------------------------------------------------------- 404 page
+def not_found():
+    # GitHub Pages serves 404.html at whatever address was asked for, so every link here starts at the site root.
+    p = dict(path='404.html', crumb='Page not found', no_cta=True, no_hero_cta=True,
+             title='Page not found | Planline', desc='This page does not exist on Planline.',
+             h1='Page not found', lede='The page you asked for is not here. It may have moved, or the address may have a typo.',
+             body='''
+<p>Try one of these instead:</p>
+<ul>
+<li><a href="/">Planline home page</a></li>
+<li><a href="/app/">Open the free scheduler</a></li>
+<li><a href="/guides/">All guides for planners</a></li>
+<li><a href="/man-hour-norms/">Man-hour norms</a></li>
+</ul>
+''')
+    out = page(p, 0)
+    out = out.replace('<link rel="canonical" href="' + SITE_URL + '404.html">\n', '<meta name="robots" content="noindex">\n')
+    # Root-relative links so the page works at any depth.
+    out = out.replace('href="./"', 'href="/"')
+    for attr in ('href', 'src'):
+        out = re.sub(attr + r'="(?!https?:|data:|/|#|mailto:)', attr + '="/', out)
+    return out
 
 
 # ---------------------------------------------------------------------------- app/index.html head
@@ -758,6 +847,13 @@ def main():
         os.makedirs(os.path.dirname(out), exist_ok=True)
         open(out, 'w', encoding='utf-8').write(page(p, depth))
     open(os.path.join(ROOT, 'index.html'), 'w', encoding='utf-8').write(home(norms, P))
+    open(os.path.join(ROOT, '404.html'), 'w', encoding='utf-8').write(not_found())
+    ads_txt = os.path.join(ROOT, 'ads.txt')
+    if ADSENSE_CLIENT:
+        pub = ADSENSE_CLIENT.replace('ca-', '', 1)
+        open(ads_txt, 'w').write(f'google.com, {pub}, DIRECT, f08c47fec0942fa0\n')
+    elif os.path.exists(ads_txt):
+        os.remove(ads_txt)
     patch_app(len(norms))
 
     locs = [('', '1.0'), ('app/', '0.9')] + [(p['path'], '0.8' if p.get('article') else '0.5') for p in P]

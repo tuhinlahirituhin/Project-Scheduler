@@ -163,3 +163,11 @@ td.unit { white-space: nowrap; }
   .feat { transition: transform .15s, border-color .15s; }
   .feat:hover { transform: translateY(-2px); border-color: var(--accent); }
 }
+
+/* guide extras */
+.byline { font-size: 13px; color: var(--ink-3); margin: -10px 0 18px; }
+.related { padding-left: 18px; }
+.wbs-tree, .wbs-tree ul { list-style: none; padding-left: 20px; margin: 4px 0; }
+.wbs-tree { padding-left: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; font-size: 15px; }
+.wbs-tree li { margin-bottom: 3px; }
+.wbs-tree ul { border-left: 1px dashed var(--line); margin-left: 6px; }
