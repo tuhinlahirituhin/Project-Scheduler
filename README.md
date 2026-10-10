@@ -19,7 +19,7 @@ A free, server-free project scheduler that runs entirely in the browser.
 - **Dashboard**: KPI tiles, S-curve (planned, baseline, actual), status mix, phase progress, man-hour histogram, a chart builder with PNG export, and a "needs attention" list
 - **Export**: formatted Excel report (dashboard with KPI tiles and charts, cell-based Gantt chart, schedule, critical path, weekly man-hours, phases, resources), CSV, MS Project XML, JSON backup
 
-All data is stored in the visitor's browser (localStorage). There is no server, database or login.
+Data is stored in the visitor's browser (localStorage). There is no server of our own. Optionally, visitors can sign in with an emailed link or Google and have their projects saved to their account in Firebase (free plan); this is off until switched on, see [Accounts](#accounts-optional).
 
 ## Run it
 
@@ -59,20 +59,26 @@ The site is served at https://planline.app (registered at Cloudflare). The `CNAM
 2. When approved, edit `js/config.js`: set `ads.enabled: true`, paste your `ca-pub-…` id into `adsenseClient`, and the slot ids into `slots.top` / `slots.bottom`.
 3. Add the `ads.txt` file AdSense gives you to the repository root.
 
+## Accounts (optional)
+
+Visitors can sign in with their email (a sign-in link, no password) or Google, and their projects are saved to their account so they open on any device. It uses Firebase Authentication and Cloud Firestore on the free Spark plan. Step-by-step setup is in [firebase/README.md](firebase/README.md); until then `cloud.enabled` in `js/config.js` stays `false` and nothing changes for visitors.
+
 ## Files
 
 | Path | What it does |
 |---|---|
 | `index.html` | Page layout |
 | `css/app.css` | Styles, light and dark theme |
-| `js/config.js` | Site name, ads and footer links |
+| `js/config.js` | Site name, ads, accounts and footer links |
 | `js/schedule.js` | Critical path engine |
 | `js/importers.js`, `js/exporters.js` | File import and export |
 | `js/norms.js` | Built-in man-hour norms (indicative values) |
 | `js/gantt.js`, `js/dashboard.js`, `js/analytics.js` | Gantt chart, dashboard, progress maths |
 | `js/progress.js` | Day / week / month progress entry sheet |
 | `js/app.js` | Editing, views, project manager and dialogs |
+| `js/cloud.js` | Optional sign-in and saving projects to the visitor's account |
+| `firebase/` | Firestore security rules and the accounts setup guide |
 | `js/report.js` | Formatted Excel report with dashboard and Gantt |
 | `css/site.css`, `js/site.js` | Guide page styles and ad loader |
 | `tools/build_pages.py` | Generates the guide pages, sitemap and SEO tags |
-| `vendor/` | SheetJS (Apache-2.0), ExcelJS (MIT) and Chart.js (MIT) |
+| `vendor/` | SheetJS (Apache-2.0), ExcelJS (MIT), Chart.js (MIT) and the Firebase JS SDK (Apache-2.0, loaded only when accounts are on) |

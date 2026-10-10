@@ -515,3 +515,18 @@ a.brand { color: inherit; text-decoration: none; }
 .welcome-opts button:hover, .welcome-opts button:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
 .welcome-opts b { font-size: 15px; }
 .welcome-opts small { color: var(--ink-3); font-size: 12.5px; }
+
+/* account window (js/cloud.js) */
+#dlg-account { width: min(460px, calc(100vw - 32px)); }
+.acct h2 { margin: 2px 0 0; }
+.acct p { margin: 0; color: var(--ink-2); }
+.acct-field { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.acct-field input { font: inherit; font-size: 15px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.acct-field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.acct .btn.wide { width: 100%; justify-content: center; padding-top: 9px; padding-bottom: 9px; }
+.acct-or { display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 12px; }
+.acct-or::before, .acct-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.acct-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.acct-more summary { cursor: pointer; color: var(--ink-3); font-size: 13px; margin-bottom: 10px; }
+.acct-err { color: var(--critical); }
+.topbar #btn-account.signed-in span { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }

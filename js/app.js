@@ -13,7 +13,12 @@ window.PS = window.PS || {};
   const app = {
     project: null, res: null, selected: new Set(), anchor: null, undo: [], redo: [], filter: '', focus: null, detailFocus: null,
   };
-  PS.app = { norms: () => getNorms() };
+  PS.app = {
+    norms: () => getNorms(), toast, confirmDlg, storeChanged,
+    currentId: () => app.project && app.project.id,
+    refreshSaved: () => { $('#saved').textContent = 'Saved in this browser'; },
+  };
+  const cloudOn = () => !!(PS.cloud && PS.cloud.on);
 
   // ---------------------------------------------------------------- storage
   const clean = (p) => JSON.parse(JSON.stringify(p, (k, v) => (k.startsWith('_') || COMPUTED.has(k) ? undefined : v)));
@@ -32,7 +37,7 @@ window.PS = window.PS || {};
       list.unshift({ id: p.id, name: p.name, updated: p.updated });
       saveIndex(list);
       U.store.set('ps.current', p.id);
-      $('#saved').textContent = ok ? 'Saved in this browser' : 'Not saved: browser storage is blocked or full. Export a backup.';
+      $('#saved').textContent = ok ? (cloudOn() ? PS.cloud.savedLabel() : 'Saved in this browser') : 'Not saved: browser storage is blocked or full. Export a backup.';
     }, 250);
   }
   function recordHistory() {
@@ -45,6 +50,28 @@ window.PS = window.PS || {};
     p.history.sort((a, b) => (a.date < b.date ? -1 : 1));
   }
   function loadProject(id) { return U.store.get('ps.p.' + id, null); }
+  /* Projects in browser storage were changed from outside the editor (saved on another device and
+     downloaded by js/cloud.js). Reload what is on screen without saving over it. */
+  function storeChanged(ids) {
+    if (!app.project) return;
+    const cur = app.project.id;
+    const p = loadProject(cur);
+    if (p && ids.includes(cur)) {
+      clearTimeout(saveTimer);
+      app.project = normalise(p);
+      app.undo = []; app.redo = []; app.selected = new Set();
+      recompute(); renderAll();
+      toast('Updated with changes saved on another device');
+    } else if (!p) {
+      const next = index().map((x) => loadProject(x.id)).find(Boolean);
+      if (next) {
+        const w = $('#dlg-welcome');
+        if (w.open) w.close();
+        openProject(next);
+      }
+    } else renderPicker();
+    if ($('#dlg-projects').open) renderProjects();
+  }
   function newProject(name, extra) {
     return Object.assign({
       id: U.uid(), name: name || 'Untitled project', startDate: U.todayISO(), statusDate: U.todayISO(),
@@ -949,10 +976,10 @@ window.PS = window.PS || {};
   }
   function safe(fn) { try { fn(); } catch (e) { toast(e.message || 'Something went wrong'); } }
 
-  function confirmDlg(title, body, okLabel, danger) {
+  function confirmDlg(title, body, okLabel, danger, cancelLabel) {
     const dlg = $('#dlg-confirm');
     $('#confirm-body').innerHTML = `<h2>${U.esc(title)}</h2><p style="margin:0">${U.esc(body)}</p>
-      <div class="dlg-foot"><button class="btn" value="cancel">Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" value="ok">${U.esc(okLabel || 'OK')}</button></div>`;
+      <div class="dlg-foot"><button class="btn" value="cancel">${U.esc(cancelLabel || 'Cancel')}</button><button class="btn ${danger ? 'danger' : 'primary'}" value="ok">${U.esc(okLabel || 'OK')}</button></div>`;
     dlg.returnValue = '';
     dlg.showModal();
     return new Promise((res) => dlg.addEventListener('close', () => res(dlg.returnValue === 'ok'), { once: true }));
@@ -1008,7 +1035,7 @@ window.PS = window.PS || {};
           <button class="btn icon ghost danger" type="button" data-pact="del" title="Delete" aria-label="Delete"><svg><use href="#i-trash"/></svg></button>
         </td></tr>`;
     }).join('');
-    $('#projects-body').innerHTML = `<div class="proj-head"><div><span class="eyebrow">Saved in this browser</span><h2>Projects</h2></div>
+    $('#projects-body').innerHTML = `<div class="proj-head"><div><span class="eyebrow">${cloudOn() ? PS.cloud.where() : 'Saved in this browser'}</span><h2>Projects</h2></div>
         <input type="search" id="p-filter" placeholder="Search projects" value="${U.esc(projFilter)}" aria-label="Search projects"></div>
       <div class="proj-actions">
         <button class="btn primary" type="button" data-pact="new"><svg><use href="#i-plus"/></svg>New project</button>
@@ -1021,7 +1048,7 @@ window.PS = window.PS || {};
       </div>
       <div class="table-scroll proj-table"><table class="plain"><thead><tr><th><input type="checkbox" data-pact="selall" aria-label="Select all"${projSel.size && projSel.size === shown.length ? ' checked' : ''}></th><th>Project</th><th class="num">Activities</th><th>Progress</th><th>Last changed</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="6" class="muted" style="padding:14px">No projects match.</td></tr>'}</tbody></table></div>
-      <div class="dlg-foot" style="justify-content:space-between"><span class="small muted">${list.length} project${list.length === 1 ? '' : 's'} · ${U.fmtNum(used / 1024, 0)} KB of browser storage used (about 5,000 KB available). Back up regularly: clearing browser data deletes projects.</span>
+      <div class="dlg-foot" style="justify-content:space-between"><span class="small muted">${list.length} project${list.length === 1 ? '' : 's'} · ${U.fmtNum(used / 1024, 0)} KB of browser storage used (about 5,000 KB available). ${cloudOn() && PS.cloud.signedIn() ? 'Projects are also saved to your account; example projects stay in this browser.' : 'Back up regularly: clearing browser data deletes projects.'}</span>
         <button class="btn" value="close">Close</button></div>`;
   }
   function bindProjects() {
@@ -1514,11 +1541,12 @@ window.PS = window.PS || {};
   function showWelcome() {
     $('#welcome-body').innerHTML = `<div class="welcome">
       <h2>Welcome to Planline</h2>
-      <p>Plan a project with a WBS, logic links, critical path, man-hours and progress. Everything is saved in this browser only. How would you like to start?</p>
+      <p>Plan a project with a WBS, logic links, critical path, man-hours and progress. ${cloudOn() ? 'Your work is saved in this browser; sign in to also save it to your account.' : 'Everything is saved in this browser only.'} How would you like to start?</p>
       <div class="welcome-opts">
         <button type="button" data-wact="blank"><b>Start a blank project</b><small>Type or paste your activities and link them</small></button>
         <button type="button" data-wact="import"><b>Import a schedule file</b><small>Excel or CSV, MS Project XML, Primavera P6 .xer, or a Planline backup</small></button>
         <button type="button" data-wact="example"><b>Explore an example project</b><small>A small warehouse job with made-up data, to see every feature</small></button>
+        ${cloudOn() && !PS.cloud.signedIn() ? '<button type="button" data-wact="signin"><b>Sign in to open your saved projects</b><small>Use the email or Google account you saved them with</small></button>' : ''}
       </div></div>`;
     const dlg = $('#dlg-welcome');
     $('#welcome-body').onclick = (e) => {
@@ -1527,6 +1555,7 @@ window.PS = window.PS || {};
       dlg.close();
       if (b.dataset.wact === 'import') { imp.mode = 'new'; openImport(); }
       if (b.dataset.wact === 'example') openProject(PS.makeSampleProject());
+      if (b.dataset.wact === 'signin') PS.cloud.open();
       if (b.dataset.wact === 'blank') toast('Click + Task, or paste rows from a spreadsheet, to start.');
     };
     dlg.showModal();
