@@ -29,7 +29,7 @@
 <script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Planline","url":"https://planline.app/app/","applicationCategory":"BusinessApplication","applicationSubCategory":"Project scheduling","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","description":"Free online project scheduler for EPC, EPCM and construction: WBS, Gantt chart, critical path, 397 man-hour norms, weighted progress and S-curves, P6 .xer and MS Project import, Excel reports. No sign-up; your data stays in your browser.","image":"https://planline.app/img/og-image.png","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"featureList":["WBS with unlimited levels","Critical path method with FS, SS, FF, SF links and lag","Gantt chart with baseline and progress","397 indicative man-hour norms","Quantity-based and weighted progress measurement","S-curve dashboard","Import Primavera P6 XER, MS Project XML, Excel and CSV","Export Excel report, CSV and MS Project XML"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Planline","url":"https://planline.app/"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Planline really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no trial, licence or account. The site may show ads to cover its costs."}},{"@type":"Question","name":"Where are my schedules saved?","acceptedAnswer":{"@type":"Answer","text":"Only in your own browser on your own device. Nothing is uploaded. Use Export › Project backup to keep a copy or move it to another computer."}},{"@type":"Question","name":"Can I open Primavera P6 and MS Project files?","acceptedAnswer":{"@type":"Answer","text":"Yes. Import a P6 .xer file or an MS Project XML file. Native .mpp files must first be saved as XML from MS Project or the free ProjectLibre."}},{"@type":"Question","name":"Does it work on a phone?","acceptedAnswer":{"@type":"Answer","text":"It works in any modern browser. A laptop or tablet is more comfortable for editing a schedule; a phone is fine for checking progress."}},{"@type":"Question","name":"Who is it for?","acceptedAnswer":{"@type":"Answer","text":"Planners, project controls engineers, package and site engineers, subcontractors and students working on EPC, EPCM, oil and gas, energy and construction projects."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Planline really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no trial, licence or account. The site may show ads to cover its costs."}},{"@type":"Question","name":"Where are my schedules saved?","acceptedAnswer":{"@type":"Answer","text":"In your own browser on your own device. Nothing is uploaded unless you choose to sign in with your email or Google account, which saves your projects to your account so they open on any device. Use Export › Project backup to keep your own copy."}},{"@type":"Question","name":"Can I open Primavera P6 and MS Project files?","acceptedAnswer":{"@type":"Answer","text":"Yes. Import a P6 .xer file or an MS Project XML file. Native .mpp files must first be saved as XML from MS Project or the free ProjectLibre."}},{"@type":"Question","name":"Does it work on a phone?","acceptedAnswer":{"@type":"Answer","text":"It works in any modern browser. A laptop or tablet is more comfortable for editing a schedule; a phone is fine for checking progress."}},{"@type":"Question","name":"Who is it for?","acceptedAnswer":{"@type":"Answer","text":"Planners, project controls engineers, package and site engineers, subcontractors and students working on EPC, EPCM, oil and gas, energy and construction projects."}}]}</script>
 <script>if(/^#(schedule|progress|dashboard|norms|settings)$/.test(location.hash))location.replace('app/'+location.hash)</script>
 </head>
 <body>
@@ -48,7 +48,7 @@
 <h1>Plan, schedule and track EPC projects in your browser</h1>
 <p class="lede">Build the WBS, link activities, find the critical path, estimate man-hours from norms and measure weighted progress with S-curves. Built for planners and project controls in oil &amp; gas, energy and construction.</p>
 <div class="cta-row"><a class="btn big" href="app/">Open the scheduler</a><a class="btn ghost big" href="app/?example">See an example project</a></div>
-<p class="cta-note">Free to use. Nothing to install. Your schedules never leave your device.</p>
+<p class="cta-note">Free to use. Nothing to install. Your schedules stay on your device unless you sign in to save them.</p>
 </div>
 <figure class="hero-shot"><div class="window"><span></span><span></span><span></span></div><img src="img/screenshot-gantt.png" width="1360" height="760" alt="Planline schedule view: WBS table with durations, dates and links next to a Gantt chart with dependency arrows, critical path and progress"></figure>
 </div></section>
@@ -104,21 +104,21 @@
 <h2 class="sec-title">Guides for planners</h2>
 <p class="sec-lede">Practical explanations with worked examples, each with a free tool to try it on.</p>
 <div class="cards">
-<a class="card" href="free-epcm-scheduling-software/"><h3>EPCM scheduling software</h3><p>A free online scheduler for EPC and EPCM projects: WBS, critical path, Gantt chart, man-hour norms, quantity-based progress, weightage, S-curves, and P6 / MS Project import.</p></a>
-<a class="card" href="gantt-chart-maker/"><h3>Gantt chart maker</h3><p>Make a Gantt chart online for free: tasks, sub-tasks, dependencies, critical path, baseline and progress bars, then export to Excel or MS Project. No account needed.</p></a>
-<a class="card" href="xer-file-viewer/"><h3>XER file viewer</h3><p>Open and view a Primavera P6 .xer file without a P6 licence. See the WBS, activities, relationships, critical path and Gantt chart, then export to Excel or MS Project XML.</p></a>
-<a class="card" href="ms-project-viewer/"><h3>MS Project file viewer</h3><p>Open MS Project schedules without MS Project: import an MS Project XML file to see tasks, links, critical path and Gantt chart in your browser, and export to Excel.</p></a>
-<a class="card" href="man-hour-norms/"><h3>Man-hour norms</h3><p>397 indicative man-hour norms (MH per unit) for oil and gas EPCM, engineering, power, buildings and general construction: welding, piping, steel, equipment, cable, instruments, insulation, painting and more.</p></a>
-<a class="card" href="progress-measurement/"><h3>Progress measurement and S-curves</h3><p>How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.</p></a>
+<a class="card" href="how-to-build-a-project-schedule/"><h3>How to build a project schedule</h3><p>A practical, step-by-step method for building a construction or EPC project schedule: scope and WBS, activities, durations from quantities, logic, calendars, critical path review, baseline, and a 14-point quality checklist.</p></a>
 <a class="card" href="critical-path-method/"><h3>Critical path method</h3><p>Learn the critical path method: forward and backward pass, early and late dates, total float, and FS, SS, FF, SF links with lag. Then calculate the critical path of your own schedule free online.</p></a>
+<a class="card" href="progress-measurement/"><h3>Progress measurement and S-curves</h3><p>How to measure physical progress on EPC and EPCM projects: weightage from man-hours, earned man-hours, quantity-based percent complete, weighted overall progress and planned vs actual S-curves, with a worked example.</p></a>
+<a class="card" href="earned-value-management/"><h3>Earned value management</h3><p>Earned value management in plain language: planned value, earned value, actual cost, schedule and cost variance, SPI, CPI, EAC, ETC and TCPI, with a worked example in man-hours for a construction project.</p></a>
+<a class="card" href="piping-man-hours/"><h3>Piping man-hour estimate</h3><p>Estimate piping installation man-hours step by step: take-off from isometrics, inch-dia and metres, weld, erection, valve, support and test norms, productivity factors, and a worked example with crew and duration.</p></a>
+<a class="card" href="xer-file-viewer/"><h3>XER file viewer</h3><p>Open and view a Primavera P6 .xer file without a P6 licence. See the WBS, activities, relationships, critical path and Gantt chart, then export to Excel or MS Project XML.</p></a>
 </div>
+<p class="center"><a href="guides/">See all 13 guides</a></p>
 </div></section>
 
 <section class="band"><div class="wrap narrow">
 <h2 id="faq">Frequently asked questions</h2>
 <div class="faq">
 <details><summary>Is Planline really free?</summary><p>Yes. There is no trial, licence or account. The site may show ads to cover its costs.</p></details>
-<details><summary>Where are my schedules saved?</summary><p>Only in your own browser on your own device. Nothing is uploaded. Use Export › Project backup to keep a copy or move it to another computer.</p></details>
+<details><summary>Where are my schedules saved?</summary><p>In your own browser on your own device. Nothing is uploaded unless you choose to sign in with your email or Google account, which saves your projects to your account so they open on any device. Use Export › Project backup to keep your own copy.</p></details>
 <details><summary>Can I open Primavera P6 and MS Project files?</summary><p>Yes. Import a P6 .xer file or an MS Project XML file. Native .mpp files must first be saved as XML from MS Project or the free ProjectLibre.</p></details>
 <details><summary>Does it work on a phone?</summary><p>It works in any modern browser. A laptop or tablet is more comfortable for editing a schedule; a phone is fine for checking progress.</p></details>
 <details><summary>Who is it for?</summary><p>Planners, project controls engineers, package and site engineers, subcontractors and students working on EPC, EPCM, oil and gas, energy and construction projects.</p></details>
@@ -138,7 +138,9 @@
 <a href="guides/">Guides</a>
 <a href="man-hour-norms/">Man-hour norms</a>
 <a href="about/">About</a>
+<a href="contact/">Contact</a>
 <a href="privacy.html">Privacy</a>
+<a href="terms/">Terms</a>
 <span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
 </div></footer>
 <script src="js/config.js"></script>

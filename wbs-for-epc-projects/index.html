@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Work Breakdown Structure (WBS) for EPC Projects, with an Example | Planline</title>
+<meta name="description" content="How to build a work breakdown structure for an EPC or EPCM project: the 100% rule, phase-first versus area-first layouts, coding, how deep to go, and a full example for a gas plant expansion.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/wbs-for-epc-projects/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="Work Breakdown Structure (WBS) for EPC Projects, with an Example | Planline">
+<meta property="og:description" content="How to build a work breakdown structure for an EPC or EPCM project: the 100% rule, phase-first versus area-first layouts, coding, how deep to go, and a full example for a gas plant expansion.">
+<meta property="og:url" content="https://planline.app/wbs-for-epc-projects/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Work Breakdown Structure (WBS) for EPC Projects, with an Example | Planline">
+<meta name="twitter:description" content="How to build a work breakdown structure for an EPC or EPCM project: the 100% rule, phase-first versus area-first layouts, coding, how deep to go, and a full example for a gas plant expansion.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<meta name="google-site-verification" content="T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;b1f68bc1b78142b4924bf774c42fe6e7&quot;}"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"WBS for EPC projects","item":"https://planline.app/wbs-for-epc-projects/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Work breakdown structure for EPC projects","description":"How to build a work breakdown structure for an EPC or EPCM project: the 100% rule, phase-first versus area-first layouts, coding, how deep to go, and a full example for a gas plant expansion.","dateModified":"2026-10-10","mainEntityOfPage":"https://planline.app/wbs-for-epc-projects/","author":{"@type":"Organization","name":"Planline","url":"https://planline.app/about/"},"publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How many levels should a WBS have?","acceptedAnswer":{"@type":"Answer","text":"For most EPC projects four or five levels above the activities: project, phase, area or package, discipline, and sometimes a sub-area. Stop when an element can be estimated, assigned and reported on its own."}},{"@type":"Question","name":"Is the WBS the same as the activity list?","acceptedAnswer":{"@type":"Answer","text":"No. The WBS is the hierarchy of deliverables and areas. Activities are the work steps that sit under its lowest level."}},{"@type":"Question","name":"Should commissioning follow areas or systems?","acceptedAnswer":{"@type":"Answer","text":"Systems. Commissioning hands over complete systems, which usually cross area boundaries, so a system-based structure matches how the work is accepted."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../app/">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../">Planline</a> › <a href="../guides/">Guides</a> › WBS for EPC projects</p>
+<h1>Work breakdown structure for EPC projects</h1>
+<p class="lede">The WBS is the backbone of the schedule, the estimate and the progress report. Here is how to structure one for an engineering, procurement and construction project, with a complete example you can copy.</p>
+<p class="byline">Planline guide · Updated 10 October 2026</p>
+<div class="cta-row"><a class="btn" href="../app/">Open the free scheduler</a><span class="cta-note">No sign-up needed, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<h2>What a WBS is for</h2>
+<p>A work breakdown structure divides the whole scope into smaller, manageable parts arranged in a hierarchy. On an EPC project the same structure is used to schedule the work, roll up man-hours and cost, measure progress and report to the client. If the WBS is wrong, every report built on it is awkward for the rest of the project, so it is worth an afternoon of thought.</p>
+
+<h2>Four rules that keep a WBS sound</h2>
+<ol>
+<li><b>The 100% rule.</b> The children of any element add up to exactly the whole of that element: no gaps, no extras.</li>
+<li><b>Mutually exclusive.</b> Each piece of work sits in one place only, so man-hours are never counted twice.</li>
+<li><b>Outcome-oriented.</b> Elements describe deliverables or physical results (Area 200 piping) rather than actions (welding).</li>
+<li><b>Fit for reporting.</b> The levels match how the client and management want to see progress, usually by phase, area and discipline.</li>
+</ol>
+
+<h2>Phase first or area first?</h2>
+<p>Most EPC schedules use a hybrid. Engineering and procurement are organised by discipline and package, because that is how design teams and buyers work. Construction is organised by area or unit, then discipline, because crews move from area to area. Commissioning is organised by system, because systems cross area boundaries: a cooling water system runs through several plots.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Layout</th><th>Works well for</th><th>Watch out for</th></tr></thead>
+<tbody>
+<tr><td>Phase › discipline › area</td><td>Engineering-heavy projects, small sites</td><td>Construction progress by area is hard to read</td></tr>
+<tr><td>Area › phase › discipline</td><td>Large sites with separate contractors per area</td><td>Engineering deliverables often serve several areas</td></tr>
+<tr><td>Hybrid (shown below)</td><td>Most EPC and EPCM projects</td><td>Needs clear coding so reports can still filter by discipline</td></tr>
+</tbody></table></div>
+
+<h2>Example: gas processing plant expansion</h2>
+<ul class="wbs-tree">
+<li><b>1</b> Gas plant expansion
+<ul>
+<li><b>1.1</b> Project management and project controls</li>
+<li><b>1.2</b> Engineering
+<ul><li>1.2.1 Process</li><li>1.2.2 Piping and layout</li><li>1.2.3 Civil and structural</li><li>1.2.4 Mechanical</li><li>1.2.5 Electrical</li><li>1.2.6 Instrumentation and control</li></ul></li>
+<li><b>1.3</b> Procurement
+<ul><li>1.3.1 Long-lead equipment (compressors, large vessels)</li><li>1.3.2 Other equipment packages</li><li>1.3.3 Bulk materials (pipe, fittings, steel, cable)</li><li>1.3.4 Logistics and customs</li></ul></li>
+<li><b>1.4</b> Construction
+<ul><li>1.4.1 Site preparation and temporary facilities</li>
+<li>1.4.2 Area 100 Inlet facilities
+<ul><li>1.4.2.1 Civil and foundations</li><li>1.4.2.2 Structural steel</li><li>1.4.2.3 Equipment erection</li><li>1.4.2.4 Piping</li><li>1.4.2.5 Electrical</li><li>1.4.2.6 Instrumentation</li><li>1.4.2.7 Insulation and painting</li></ul></li>
+<li>1.4.3 Area 200 Compression (same disciplines)</li>
+<li>1.4.4 Area 300 Main pipe rack (same disciplines)</li></ul></li>
+<li><b>1.5</b> Pre-commissioning and commissioning
+<ul><li>1.5.1 System 10 Inlet gas</li><li>1.5.2 System 20 Compression</li><li>1.5.3 System 40 Cooling water</li><li>1.5.4 System 70 Power distribution</li></ul></li>
+</ul></li>
+</ul>
+<p>Activities sit under the lowest level. For example, under 1.4.2.4 Piping you would find "Erect large-bore spools", "Field welding", "Install supports", "Hydrotest test packs" and "Reinstatement", each with a quantity and a norm.</p>
+
+<h2>How deep should it go?</h2>
+<p>Stop breaking down when an element is small enough to estimate with confidence, assign to one party, and report on. On most EPC projects that means four or five levels above the activities. Going deeper makes the WBS a list of activities in disguise, which is harder to maintain and adds nothing to reports.</p>
+
+<h2>Coding</h2>
+<p>Give every element a code that shows its position, such as 1.4.2.4. Keep the codes stable once reporting starts: clients often map their cost and progress systems to them. If you also need to report by discipline across all areas, keep the discipline at the same level in every branch (in the example above it is always the fourth level under construction), or add a separate discipline code to each activity.</p>
+
+<h2>WBS, OBS and CBS</h2>
+<ul>
+<li><b>WBS</b> answers "what work?"</li>
+<li><b>OBS</b> (organisation breakdown structure) answers "who is responsible?"</li>
+<li><b>CBS</b> (cost breakdown structure) answers "which budget pays for it?"</li>
+</ul>
+<p>The point where a WBS element meets one responsible party is called a control account. It is where budget, schedule and progress are managed together, and where <a href="../earned-value-management/">earned value</a> is usually measured.</p>
+
+<h2>Common mistakes</h2>
+<ul>
+<li>Organising construction by discipline only, so no one can see which area is behind.</li>
+<li>Putting commissioning under construction areas, which splits each system into pieces.</li>
+<li>Creating levels for one activity each, which bloats reports.</li>
+<li>Changing the structure mid-project, which breaks every trend chart built on it.</li>
+</ul>
+
+<h2>Building the WBS in Planline</h2>
+<p>Type the elements as rows, then use indent and outdent to make the hierarchy; summary rows roll up dates, man-hours and progress automatically, and WBS codes are generated from the outline. You can also paste an existing WBS from Excel: Planline works out the levels from outline numbers, indentation or WBS codes.</p>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>How many levels should a WBS have?</summary><p>For most EPC projects four or five levels above the activities: project, phase, area or package, discipline, and sometimes a sub-area. Stop when an element can be estimated, assigned and reported on its own.</p></details>
+<details><summary>Is the WBS the same as the activity list?</summary><p>No. The WBS is the hierarchy of deliverables and areas. Activities are the work steps that sit under its lowest level.</p></details>
+<details><summary>Should commissioning follow areas or systems?</summary><p>Systems. Commissioning hands over complete systems, which usually cross area boundaries, so a system-based structure matches how the work is accepted.</p></details>
+</div>
+<h2>Related guides</h2>
+<ul class="related">
+<li><a href="../critical-path-method/">Critical path method explained</a></li>
+<li><a href="../how-to-build-a-project-schedule/">How to build a project schedule, step by step</a></li>
+<li><a href="../look-ahead-schedule/">How to make a three-week look-ahead schedule</a></li>
+</ul>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free and needs no sign-up. Your schedules stay in your browser unless you choose to sign in and save them to your account. Start a blank project, import your own file, or look around the example project first.</p>
+<p><a class="btn" href="../app/">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../">Home</a>
+<a href="../app/">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../contact/">Contact</a>
+<a href="../privacy.html">Privacy</a>
+<a href="../terms/">Terms</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Build a Project Schedule Step by Step (with a Quality Checklist) | Planline</title>
+<meta name="description" content="A practical, step-by-step method for building a construction or EPC project schedule: scope and WBS, activities, durations from quantities, logic, calendars, critical path review, baseline, and a 14-point quality checklist.">
+<meta name="theme-color" content="#0b7470">
+<link rel="canonical" href="https://planline.app/how-to-build-a-project-schedule/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Planline">
+<meta property="og:title" content="How to Build a Project Schedule Step by Step (with a Quality Checklist) | Planline">
+<meta property="og:description" content="A practical, step-by-step method for building a construction or EPC project schedule: scope and WBS, activities, durations from quantities, logic, calendars, critical path review, baseline, and a 14-point quality checklist.">
+<meta property="og:url" content="https://planline.app/how-to-build-a-project-schedule/">
+<meta property="og:image" content="https://planline.app/img/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How to Build a Project Schedule Step by Step (with a Quality Checklist) | Planline">
+<meta name="twitter:description" content="A practical, step-by-step method for building a construction or EPC project schedule: scope and WBS, activities, durations from quantities, logic, calendars, critical path review, baseline, and a 14-point quality checklist.">
+<meta name="twitter:image" content="https://planline.app/img/og-image.png">
+<meta name="google-site-verification" content="T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw">
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;b1f68bc1b78142b4924bf774c42fe6e7&quot;}"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b7470'/%3E%3Crect x='6' y='8' width='12' height='4' rx='2' fill='white'/%3E%3Crect x='12' y='14' width='14' height='4' rx='2' fill='white'/%3E%3Crect x='9' y='20' width='9' height='4' rx='2' fill='white' opacity='.7'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../css/site.css">
+<script>try{var t=JSON.parse(localStorage.getItem('ps.theme'));if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Planline","item":"https://planline.app/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://planline.app/guides/"},{"@type":"ListItem","position":3,"name":"How to build a project schedule","item":"https://planline.app/how-to-build-a-project-schedule/"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"How to build a project schedule, step by step","description":"A practical, step-by-step method for building a construction or EPC project schedule: scope and WBS, activities, durations from quantities, logic, calendars, critical path review, baseline, and a 14-point quality checklist.","dateModified":"2026-10-10","mainEntityOfPage":"https://planline.app/how-to-build-a-project-schedule/","author":{"@type":"Organization","name":"Planline","url":"https://planline.app/about/"},"publisher":{"@type":"Organization","name":"Planline","url":"https://planline.app/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How detailed should a project schedule be?","acceptedAnswer":{"@type":"Answer","text":"Detailed enough that each activity can be measured and has one responsible party, and short enough to control: no longer than about two reporting periods. A level 3 schedule for the whole project with level 4 detail for the next few months is a common approach."}},{"@type":"Question","name":"What is the difference between a schedule and a plan?","acceptedAnswer":{"@type":"Answer","text":"The plan describes what will be done, how and by whom. The schedule puts that plan on a time line with durations and logic, so dates can be calculated and progress measured."}},{"@type":"Question","name":"Should I use constraints to fix dates?","acceptedAnswer":{"@type":"Answer","text":"Sparingly. A constraint overrides logic, so the schedule stops telling you the truth when things change. Model the reason for the date instead, such as a delivery milestone or an access date."}}]}</script>
+</head>
+<body>
+<header class="site-head"><div class="wrap">
+<a class="logo" href="../"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0b7470"/><rect x="6" y="8" width="12" height="4" rx="2" fill="#fff"/><rect x="12" y="14" width="14" height="4" rx="2" fill="#fff"/><rect x="9" y="20" width="9" height="4" rx="2" fill="#fff" opacity=".7"/></svg>Planline</a>
+<nav class="site-nav" aria-label="Site">
+<a class="hide-sm" href="../free-epcm-scheduling-software/">EPCM scheduling</a>
+<a class="hide-sm" href="../man-hour-norms/">Man-hour norms</a>
+<a href="../guides/">Guides</a>
+<a class="btn" href="../app/">Open scheduler</a>
+</nav>
+</div></header>
+<section class="hero"><div class="wrap">
+<p class="crumbs"><a href="../">Planline</a> › <a href="../guides/">Guides</a> › How to build a project schedule</p>
+<h1>How to build a project schedule, step by step</h1>
+<p class="lede">A good schedule is a model of how the work will really be done. This guide walks through the method planners use on construction and EPC projects, from the scope to a baseline you can defend, with the quality checks reviewers apply.</p>
+<p class="byline">Planline guide · Updated 10 October 2026</p>
+<div class="cta-row"><a class="btn" href="../app/">Open the free scheduler</a><span class="cta-note">No sign-up needed, nothing to install. Your data stays on your device.</span></div>
+</div></section>
+<main class="wrap"><div class="article">
+
+<p>Schedules fail for predictable reasons: activities that are too long to measure, missing logic, dates typed in by hand instead of calculated, and durations that nobody can explain. Each step below is aimed at one of those problems. The same method works for a two-week shutdown or a three-year plant build; only the level of detail changes.</p>
+
+<h2>1. Pin down the scope and the key dates</h2>
+<p>Before opening any software, collect what the schedule has to respect: the contract scope, the start date, contractual milestones (mechanical completion, ready for start-up, handover), known access dates, long-lead equipment deliveries, and the working pattern on site (days per week, hours per day, holidays, weather windows). Write these down. They are the frame every later decision is checked against.</p>
+
+<h2>2. Break the work down (WBS)</h2>
+<p>The work breakdown structure divides the scope into manageable pieces so nothing is forgotten and nothing is counted twice. On EPC projects the usual top levels are engineering, procurement, construction and commissioning, with construction split by area or unit and then by discipline. The <a href="../wbs-for-epc-projects/">WBS guide</a> has a full example. A WBS level is a container; the work itself lives in the activities underneath it.</p>
+
+<h2>3. List the activities</h2>
+<p>An activity is a piece of work with a clear start, a clear finish and one responsible party. Good activities share a few traits:</p>
+<ul>
+<li><b>Verb plus object:</b> "Erect pipe rack steel, Area 200", not "Steel".</li>
+<li><b>Measurable:</b> progress can be judged from a quantity or a clear step, such as tonnes erected or drawings issued.</li>
+<li><b>Short enough to control:</b> a common rule is that no activity should be longer than about two reporting periods. With monthly reporting that means activities of six to eight weeks at most; for a weekly look-ahead, much shorter.</li>
+<li><b>One trade, one area:</b> mixing disciplines in one activity hides who is late.</li>
+</ul>
+<p>Add milestones (zero-duration activities) for contract dates, deliveries and hand-overs between parties.</p>
+
+<h2>4. Estimate durations from quantities, not guesses</h2>
+<p>For construction work the defensible way to get a duration is from the quantity, a man-hour norm and the crew:</p>
+<p><code>Duration (days) = Quantity × Norm (MH/unit) × Productivity factor ÷ (Crew size × Hours per day)</code></p>
+<p>For example, 40 tonnes of structural steel at 22 MH per tonne with a site factor of 1.2 is 1,056 man-hours. A crew of 8 working 10-hour days delivers 80 man-hours a day, so the activity needs about 13 working days. The <a href="../man-hour-norms/">man-hour norms page</a> lists indicative norms for most trades, and the <a href="../piping-man-hours/">piping estimate guide</a> works through a full example. For engineering and procurement, durations come from deliverable lists, vendor quotations and lead times.</p>
+
+<h2>5. Link the activities with logic</h2>
+<p>Logic is what makes a schedule a model instead of a drawing. Every activity needs at least one predecessor and one successor, except the project start and finish. Use finish-to-start links wherever possible; use start-to-start and finish-to-finish with a lag where work genuinely overlaps, such as insulation following hydrotesting by a few days. The <a href="../critical-path-method/">critical path guide</a> explains each link type.</p>
+<p>Avoid the two habits that break logic: typing fixed dates instead of links, and using constraints to force an activity where you want it. If an activity "must" start on a date, ask what drives that date and model the driver, for example a delivery milestone.</p>
+
+<h2>6. Set the calendar</h2>
+<p>Working days, hours per day and holidays turn durations into dates. Get them right early: a six-day week compresses the whole schedule by roughly 15% compared with a five-day week, and a missed national holiday period can move a milestone by two weeks.</p>
+
+<h2>7. Review the critical path and float</h2>
+<p>Once the schedule calculates, read it like a reviewer would:</p>
+<ul>
+<li>Does the critical path run through the work you expect to drive the finish, such as long-lead equipment, then installation, then commissioning? A critical path through a minor activity usually means missing logic.</li>
+<li>Are there activities with very large float? They often have no successor.</li>
+<li>Is any float negative? That means a milestone cannot be met with the current logic and durations.</li>
+</ul>
+
+<h2>8. Load resources and check the peaks</h2>
+<p>Spread the man-hours over each activity's duration and look at the histogram. A peak of 400 pipefitters on a site that can accommodate 150 is not a plan. Smooth peaks by moving non-critical work within its float, or by adding logic that reflects crew flow from area to area.</p>
+
+<h2>9. Review with the people who will do the work</h2>
+<p>Walk the construction manager, discipline leads and key subcontractors through the sequence. They will catch access problems, crane conflicts and unrealistic overlaps that no software will.</p>
+
+<h2>10. Baseline and control</h2>
+<p>When the schedule is agreed, save a baseline and stop editing the plan casually. From now on you update progress against it, report variances and only re-baseline through change control.</p>
+
+<h2>Schedule quality checklist</h2>
+<p>Many owners check schedules against the US Defense Contract Management Agency's 14-point assessment. The thresholds are a useful sanity check for any project:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Check</th><th>What it looks for</th><th>Typical threshold</th></tr></thead>
+<tbody>
+<tr><td>Missing logic</td><td>Activities without a predecessor or successor</td><td>Under 5% of activities</td></tr>
+<tr><td>Leads</td><td>Negative lags</td><td>None</td></tr>
+<tr><td>Lags</td><td>Links with a positive lag</td><td>Under 5% of links</td></tr>
+<tr><td>Relationship types</td><td>Share of finish-to-start links</td><td>At least 90%</td></tr>
+<tr><td>Hard constraints</td><td>Must-start, must-finish and similar</td><td>Under 5% of activities</td></tr>
+<tr><td>High float</td><td>Total float over 44 working days</td><td>Under 5% of activities</td></tr>
+<tr><td>Negative float</td><td>Activities that cannot meet a constraint</td><td>None</td></tr>
+<tr><td>High duration</td><td>Activities over 44 working days</td><td>Under 5% of activities</td></tr>
+<tr><td>Invalid dates</td><td>Actuals in the future, forecasts in the past</td><td>None</td></tr>
+<tr><td>Resources</td><td>Activities with no resources or man-hours</td><td>Every activity with work has them</td></tr>
+<tr><td>Missed tasks</td><td>Activities finishing later than baseline</td><td>Under 5%</td></tr>
+<tr><td>Critical path test</td><td>Delaying a critical activity delays the finish</td><td>Must pass</td></tr>
+<tr><td>Critical path length index</td><td>(Critical path length + float) ÷ critical path length</td><td>0.95 or more</td></tr>
+<tr><td>Baseline execution index</td><td>Tasks completed ÷ tasks planned to be complete</td><td>0.95 or more</td></tr>
+</tbody></table></div>
+<p>Treat these as prompts for questions, not as pass or fail rules. A shutdown schedule full of short start-to-start links can be perfectly sound.</p>
+
+<h2>Doing it in Planline</h2>
+<p>In the free scheduler you build the WBS with indent and outdent, type links like <code>12</code> or <code>12SS+3</code>, pick a norm and quantity for each construction activity so man-hours and durations follow, set the working days and holidays in Settings, and save a baseline when the plan is agreed. The Gantt chart shows the critical path and total float as you work.</p>
+
+<div class="ad-slot" hidden></div>
+<h2 id="faq">Frequently asked questions</h2>
+<div class="faq">
+<details><summary>How detailed should a project schedule be?</summary><p>Detailed enough that each activity can be measured and has one responsible party, and short enough to control: no longer than about two reporting periods. A level 3 schedule for the whole project with level 4 detail for the next few months is a common approach.</p></details>
+<details><summary>What is the difference between a schedule and a plan?</summary><p>The plan describes what will be done, how and by whom. The schedule puts that plan on a time line with durations and logic, so dates can be calculated and progress measured.</p></details>
+<details><summary>Should I use constraints to fix dates?</summary><p>Sparingly. A constraint overrides logic, so the schedule stops telling you the truth when things change. Model the reason for the date instead, such as a delivery milestone or an access date.</p></details>
+</div>
+<h2>Related guides</h2>
+<ul class="related">
+<li><a href="../critical-path-method/">Critical path method explained</a></li>
+<li><a href="../wbs-for-epc-projects/">Work breakdown structure for EPC projects</a></li>
+<li><a href="../look-ahead-schedule/">How to make a three-week look-ahead schedule</a></li>
+</ul>
+<div class="cta-box">
+<h2>Try it on your own schedule</h2>
+<p>Planline is free and needs no sign-up. Your schedules stay in your browser unless you choose to sign in and save them to your account. Start a blank project, import your own file, or look around the example project first.</p>
+<p><a class="btn" href="../app/">Open the free scheduler</a></p>
+</div>
+</div></main>
+<footer class="site-foot"><div class="wrap">
+<a href="../">Home</a>
+<a href="../app/">Scheduler</a>
+<a href="../guides/">Guides</a>
+<a href="../man-hour-norms/">Man-hour norms</a>
+<a href="../about/">About</a>
+<a href="../contact/">Contact</a>
+<a href="../privacy.html">Privacy</a>
+<a href="../terms/">Terms</a>
+<span class="copy">Planline is a free, browser-based project scheduler. Norms and guidance are indicative; check them against your own project records.</span>
+</div></footer>
+<script src="../js/config.js"></script>
+<script src="../js/site.js"></script>
+</body>
+</html>
