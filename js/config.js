@@ -15,12 +15,12 @@ window.PS_CONFIG = {
   // (step by step in firebase/README.md), then paste the firebaseConfig values and set enabled: true.
   // These values are public by design; the security rules in firebase/firestore.rules protect the data.
   cloud: {
-    enabled: false,
+    enabled: true,
     firebase: {
-      apiKey: '',
-      authDomain: '',         // e.g. 'planline-app.firebaseapp.com'
-      projectId: '',          // e.g. 'planline-app'
-      appId: '',
+      apiKey: 'AIzaSyCfGe89v8Jf0T546pJIAStgUhVNMIrALxo',
+      authDomain: 'planline-294e9.firebaseapp.com',
+      projectId: 'planline-294e9',
+      appId: '1:626402980763:web:4f8c9e01f28dac4efd273e',
     },
     googleSignIn: true,       // also show "Continue with Google"
   },
