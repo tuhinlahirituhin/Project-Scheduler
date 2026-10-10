@@ -17,7 +17,7 @@ SITE_URL = 'https://planline.app/'
 SITE_NAME = 'Planline'
 UPDATED = '2026-10-07'
 # Paste the content="..." value from Google Search Console's "HTML tag" verification here.
-GOOGLE_VERIFICATION = ''
+GOOGLE_VERIFICATION = 'T3kQUE5jiSGpkacM10gJxqJWgETn7mXJjAqL6e1_-mw'
 BING_VERIFICATION = ''
 ISSUES_URL = 'https://github.com/tuhinlahirituhin/Project-Scheduler/issues'
 
